@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 int main (void)
 {
@@ -6,12 +7,15 @@ int main (void)
 
     while (1) {
     
-    printf("Brother PowerTools\n\n");
-    printf("1. Send Text\n");
-    printf("2. Receive Text\n");
-    printf("3. BASIC\n");
-    printf("4. Settings\n");
-    printf("5. Exit\n\n");
+    printf("+--------------------+\n");
+    printf("| Brother PowerTools |\n");
+    printf("+--------------------+\n");
+    printf("| 1. Send Text       |\n");
+    printf("| 2. Receive Text    |\n");
+    printf("| 3. BASIC           |\n");
+    printf("| 4. Settings        |\n");
+    printf("| 5. Exit            |\n");
+    printf("+--------------------+\n");
     printf("Enter your choice: ");
     
     if (scanf("%d", &choice) != 1) {
@@ -28,6 +32,7 @@ int main (void)
             break;
         case 3:
             printf("You selected BASIC\n");
+            system("bwbasic");
             break;
         case 4:
             printf("You selected Settings\n");
