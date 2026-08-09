@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/select.h>
+#include <unistd.h>
 
 void splash_screen(void);
 void main_menu(void);
+void wait_for_enter(void);
 
 int main (void)
 {
@@ -39,9 +42,9 @@ int main (void)
                 "|/////////////////////////////////////////////////////////////////////////////|\n"
                 "|_____________________________________________________________________________|"
         );
-
-        getchar();
-
+        
+        wait_for_enter();
+        
         return;
         //main_menu();
 
@@ -58,7 +61,7 @@ int main (void)
             "|   |_   _   _  _|_ |_   _   _                |\n"
             "|   | \\ | \\ / \\  |  | \\ / \\ | \\  PowerTools   |\n"
             "|   | | |   | |  |  | | |_| |      v0.0.1     |\n"
-            "|   |_/ |   \\_/  |  | | \\__ |                 |\n"       
+            "|   \\_/ |   \\_/  |  | | \\__ |                 |\n"       
             "+---------------------------------------------+\n"
             "|               1. Send Text                  |\n"
             "|               2. Receive Text               |\n"
@@ -99,6 +102,25 @@ int main (void)
         } // End while
   
         }; // End main_menu
+
+    void wait_for_enter(void) {
+        fd_set input;
+        struct timeval timeout;
+        int c;
+
+        FD_ZERO(&input);
+        FD_SET(STDIN_FILENO, &input);
+
+        timeout.tv_sec=0;
+        timeout.tv_usec=0;
+
+        if (select(STDIN_FILENO + 1, &input, NULL, NULL, &timeout) > 0) {
+            while ((c = getchar()) != '\n' && c != EOF) {
+                // Consume the input until newline or EOF
+            }                
+        }
+        getchar();
+        }
 
 
     
