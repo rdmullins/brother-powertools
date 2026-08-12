@@ -3,6 +3,8 @@
 #include <sys/select.h>
 #include <unistd.h>
 
+#include "mail.h"
+
 void splash_screen(void);
 void main_menu(void);
 void wait_for_enter(void);
@@ -66,7 +68,7 @@ int main (void)
             "|               1. Send Text                  |\n"
             "|               2. Receive Text               |\n"
             "|               3. BASIC                      |\n"
-            "|               4. Settings                   |\n"
+            "|               4. EMail                      |\n"
             "|               5. Exit                       |\n"
             "+---------------------------------------------+\n"
             "\n"
@@ -90,7 +92,7 @@ int main (void)
                 system("bwbasic");
                 break;
             case 4:
-                printf("You selected Settings\n");
+                mail_menu();
                 break;
             case 5:
                 printf("Exiting...\n");
