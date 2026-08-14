@@ -71,7 +71,8 @@ void mail_browser(void)
                 return;
             }
 
-            {
+            while (1) {
+
                 char show_command[2048];
 
                 snprintf(
@@ -83,13 +84,40 @@ void mail_browser(void)
                 );
 
                 system(show_command);
+
+                printf(
+                    "\n"
+                    "N Next   P Previous   Q Quit\n"
+                    "Command: "
+                );
+
+                scanf(" %c", &command);
+
+                switch (command) {
+
+                    case 'n':
+                    case 'N':
+                        message_number++;
+                        break;
+
+                    case 'p':
+                    case 'P':
+                        message_number--;
+                        break;
+
+                    case 'q':
+                    case 'Q':
+                        goto done_reading;
+
+                    default:
+                        printf("\nUnknown command.\n");
+                        break;
+                }
             }
 
-            printf("\nPress Enter to return...");
-            getchar();
-            getchar();
+        done_reading:
             break;
-
+            
         case 'q':
         case 'Q':
             return;
