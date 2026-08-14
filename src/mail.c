@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "mail_browser.h"
 #include "mail.h"
 
 void mail_menu(void)
@@ -34,7 +35,7 @@ void mail_menu(void)
 
         switch (choice) {
             case 1:
-                system("/usr/bin/mh/scan");
+                mail_browser();
                 break;
 
             case 2:
