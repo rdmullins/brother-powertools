@@ -35,6 +35,7 @@ void mail_menu(void)
 
         switch (choice) {
             case 1:
+                system("/usr/bin/mh/inc");
                 mail_browser();
                 break;
 

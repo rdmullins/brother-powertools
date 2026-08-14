@@ -36,7 +36,7 @@ void mail_browser(void)
     );
 
     fp = popen(
-        "/usr/bin/mh/scan -format '%4(msg) %02(mon{date})/%02(mday{date}) %-20(friendly{from}) %{subject}\\n'",
+        "/usr/bin/mh/scan -width 76 -format '%4(msg) %02(mon{date})/%02(mday{date}) %-20(friendly{from}) %{subject}\\n'",
         "r"
     );
 
