@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "mail.h"
+#include "games.h"
 
 void splash_screen(void);
 void main_menu(void);
@@ -65,10 +66,10 @@ int main (void)
             "|   | | |   | |  |  | | |_| |      v0.0.1     |\n"
             "|   \\_/ |   \\_/  |  | | \\__ |                 |\n"       
             "+---------------------------------------------+\n"
-            "|               1. Send Text                  |\n"
-            "|               2. Receive Text               |\n"
+            "|               1. Transfer Text              |\n"
+            "|               2. Games                      |\n"
             "|               3. BASIC                      |\n"
-            "|               4. EMail                      |\n"
+            "|               4. Email                      |\n"
             "|               5. Exit                       |\n"
             "+---------------------------------------------+\n"
             "\n"
@@ -82,10 +83,11 @@ int main (void)
 
         switch (choice) {
             case 1:
-                printf("You selected Send Text\n");
+                printf("You selected Transfer Text\n");
                 break;
             case 2:
-                printf("You selected Receive Text\n");
+                printf("You selected Games\n");
+                game_menu();
                 break;
             case 3:
                 printf("You selected BASIC\n");
