@@ -19,7 +19,7 @@ int main (void)
 
     void splash_screen(void) {
 
-        int choice = 0;
+        //int choice = 0;
 
             printf(
                 "_______________________________________________________________________________\n"

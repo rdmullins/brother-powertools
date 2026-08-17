@@ -6,7 +6,7 @@
 ;
 overflowtext="***",overflowoffset=5
 leftadjust,compwidth=9
-ignores=msgid,message-id,received,content-type,content-transfer-encoding,content-id,delivered-to,x-received,arc-seal,arc-message-signature,arc-authentication-results,return-path,received-spf,authentication-results,dkim-signature,x-google-dkim-signature,x-gm-message-state,x-gm-gg,x-received,mime-version,x-gm-features
+ignores=msgid,message-id,received,content-type,content-transfer-encoding,content-id,delivered-to,x-received,arc-seal,arc-message-signature,arc-authentication-results,return-path,received-spf,authentication-results,dkim-signature,x-google-dkim-signature,x-gm-message-state,x-gm-gg,mime-version,x-gm-features,reply-to,x-sg-eid,x-sg-id,x-entity-id
 Resent-To:formatfield="%(unquote(decode{text}))"
 Resent-cc:formatfield="%(unquote(decode{text}))"
 Resent-From:formatfield="%(unquote(decode{text}))"
@@ -16,5 +16,4 @@ cc:formatfield="%(unquote(decode{text}))"
 From:formatfield="%(unquote(decode{text}))"
 Subject:decode
 :
-extras:nocomponent
 :
