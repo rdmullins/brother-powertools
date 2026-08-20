@@ -3,6 +3,7 @@
 #include <sys/select.h>
 #include <unistd.h>
 
+#include "transfer.h"
 #include "mail.h"
 #include "games.h"
 
@@ -83,7 +84,7 @@ int main (void)
 
         switch (choice) {
             case 1:
-                printf("You selected Transfer Text\n");
+                transfer_menu();
                 break;
             case 2:
                 printf("You selected Games\n");
