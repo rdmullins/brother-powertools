@@ -16,7 +16,8 @@ void game_menu(void)
             "|  1. Adventure                               |\n"
             "|  2. Star Trek                               |\n"
             "|  3. Hunt the Wumpus                         |\n"
-            "|  4. Exit                                    |\n"
+            "|  4. Oregon Trail                            |\n"
+            "|  5. Exit                                    |\n"
             "+---------------------------------------------+\n"
             "\n"
             "Enter your choice: "
@@ -47,6 +48,10 @@ void game_menu(void)
                 break;
 
             case 4:
+                system("~/.local/bin/oregon-local");
+                break;
+
+            case 5:
                 return;
 
             default:
