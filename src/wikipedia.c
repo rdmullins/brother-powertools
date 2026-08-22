@@ -16,6 +16,12 @@
 #define WIKIPEDIA_JSON_FILE "/tmp/powertools-wikipedia.json"
 #define WIKIPEDIA_TEXT_FILE "/tmp/powertools-wikipedia.txt"
 
+typedef struct {
+    char prefix[512];
+    int current_part;
+    int total_parts;
+} wikipedia_transfer_t;
+
 static long get_file_size(const char *filename)
 {
     FILE *file;
@@ -253,6 +259,7 @@ void wikipedia_lookup(void)
     long article_size;
 size_t max_size;
 int parts;
+wikipedia_transfer_t transfer;
 
 article_size = get_file_size(WIKIPEDIA_TEXT_FILE);
 
@@ -285,7 +292,7 @@ getchar();
 
     switch (choice) {
         case 1: {
-        char part_filename[512];
+        char part_filename[1024];
 
         printf("\n");
         printf("How much free PowerNote memory is available?\n");
@@ -319,32 +326,72 @@ getchar();
             printf("Unable to split article.\n");
             return;
         }
+        strncpy(transfer.prefix,
+        "/tmp/powertools-wikipedia",
+        sizeof(transfer.prefix) - 1);
+
+transfer.prefix[sizeof(transfer.prefix) - 1] = '\0';
+
+transfer.current_part = 1;
+transfer.total_parts = parts;
 
         printf("\n");
         printf("The article will be sent in %d parts.\n", parts);
 
-        snprintf(part_filename,
-                sizeof(part_filename),
-                "/tmp/powertools-wikipedia_%02d.txt",
-                1);
+        transfer.current_part = 1;
 
-        /*
-        * Tell the operator what must happen on the Brother
-        * before we begin sending. Do NOT print anything after
-        * transmission until the operator has finished the
-        * receive operation.
-        */
-        printf("\n");
-        printf("On the Brother:\n");
-        printf("  1. Enter Receive ASCII File / No Protocol.\n");
-        printf("  2. Enter the filename.\n");
-        printf("  3. When ready, press ENTER here.\n");
-        printf("  4. When the transfer finishes, press FILE on the Brother.\n");
-        printf("  5. Save the received file before returning to Communications.\n");
-        printf("\n");
+        while (transfer.current_part <= transfer.total_parts) {
+            snprintf(part_filename,
+                     sizeof(part_filename),
+                     "%s_%02d.txt",
+                     transfer.prefix,
+                     transfer.current_part);
 
-        if (send_transfer_part(part_filename, 1, parts) != 0) {
-            return;
+            if (send_transfer_part(part_filename,
+                                   transfer.current_part,
+                                   transfer.total_parts) != 0) {
+                return;
+            }
+
+            if (transfer.current_part == transfer.total_parts) {
+                printf("\n");
+                printf("All parts have been transferred.\n");
+                break;
+            }
+
+            printf("\n");
+            printf("+---------------------------------------------+\n");
+            printf("|          Wikipedia Transfer                 |\n");
+            printf("+---------------------------------------------+\n");
+            printf("| Part %d of %d complete.                      |\n",
+                   transfer.current_part,
+                   transfer.total_parts);
+            printf("|                                             |\n");
+            printf("| 1. Send next part                          |\n");
+            printf("| 2. Cancel transfer                         |\n");
+            printf("+---------------------------------------------+\n");
+            printf("\n");
+            printf("Enter your choice: ");
+
+            if (scanf("%d", &choice) != 1) {
+                int c;
+
+                while ((c = getchar()) != '\n' && c != EOF) {
+                    /* discard invalid input */
+                }
+
+                printf("Invalid input. Transfer cancelled.\n");
+                return;
+            }
+
+            getchar();
+
+            if (choice == 1) {
+                transfer.current_part++;
+            } else {
+                printf("Transfer cancelled.\n");
+                return;
+            }
         }
 
         break;
