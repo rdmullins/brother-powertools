@@ -292,22 +292,25 @@ while (total_written < output_length) {
     /*
      * Make sure every byte has physically left the serial port.
      */
-    tcdrain(fd);
+tcdrain(fd);
 
-    /*
-     * Give the operator time to press FILE on the PowerNote and
-     * finish the receive operation. Do not print anything during
-     * this interval.
-     */
-    sleep(5);
+/*
+ * Do not print anything here.
+ *
+ * The Brother is still in Receive mode. The operator must
+ * press FILE, save the file, return to Communications,
+ * and then press ENTER in PowerTools.
+ */
+tcsetattr(fd, TCSANOW, &old_termios);
 
-    tcsetattr(fd, TCSANOW, &old_termios);
+close(fd);
+fclose(input);
 
-    close(fd);
-    fclose(input);
+getchar();
 
-    printf("\nTransfer complete.\n");
-    return 0;
+printf("\nTransfer complete.\n");
+
+return 0;
 }
 
 void transfer_menu(void)

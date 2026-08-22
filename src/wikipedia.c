@@ -283,8 +283,10 @@ if (scanf("%d", &choice) != 1) {
 
 getchar();
 
-switch (choice) {
-    case 1:
+    switch (choice) {
+        case 1: {
+        char part_filename[512];
+
         printf("\n");
         printf("How much free PowerNote memory is available?\n");
         printf("Enter maximum part size in bytes: ");
@@ -307,26 +309,46 @@ switch (choice) {
             return;
         }
 
+        parts = split_file(
+            WIKIPEDIA_TEXT_FILE,
+            "/tmp/powertools-wikipedia",
+            max_size
+        );
+
+        if (parts < 0) {
+            printf("Unable to split article.\n");
+            return;
+        }
+
+        printf("\n");
+        printf("The article will be sent in %d parts.\n", parts);
+
+        snprintf(part_filename,
+                sizeof(part_filename),
+                "/tmp/powertools-wikipedia_%02d.txt",
+                1);
+
+        /*
+        * Tell the operator what must happen on the Brother
+        * before we begin sending. Do NOT print anything after
+        * transmission until the operator has finished the
+        * receive operation.
+        */
+        printf("\n");
+        printf("On the Brother:\n");
+        printf("  1. Enter Receive ASCII File / No Protocol.\n");
+        printf("  2. Enter the filename.\n");
+        printf("  3. When ready, press ENTER here.\n");
+        printf("  4. When the transfer finishes, press FILE on the Brother.\n");
+        printf("  5. Save the received file before returning to Communications.\n");
         printf("\n");
 
-        if ((long)max_size >= article_size) {
-            printf("The article will fit in one part.\n");
-        } else {
-            parts = split_file(
-                WIKIPEDIA_TEXT_FILE,
-                "/tmp/powertools-wikipedia",
-                max_size
-            );
-
-            if (parts < 0) {
-                printf("Unable to split article.\n");
-                return;
-            }
-
-            printf("The article will be sent in %d parts.\n", parts);
+        if (send_transfer_part(part_filename, 1, parts) != 0) {
+            return;
         }
 
         break;
+    }
 
     case 2:
         return;
@@ -335,72 +357,4 @@ switch (choice) {
         printf("Invalid option.\n");
         return;
 }
-
-    switch (choice) {
-        case 1: {
-            char part_filename[512];
-
-            printf("\n");
-            printf("How much free PowerNote memory is available?\n");
-            printf("Enter maximum part size in bytes: ");
-
-            if (scanf("%zu", &max_size) != 1) {
-                int c;
-
-                while ((c = getchar()) != '\n' && c != EOF) {
-                    /* discard invalid input */
-                }
-
-                printf("Invalid size.\n");
-                return;
-            }
-
-            getchar();
-
-            if (max_size == 0) {
-                printf("Size must be greater than zero.\n");
-                return;
-            }
-
-            parts = split_file(
-                WIKIPEDIA_TEXT_FILE,
-                "/tmp/powertools-wikipedia",
-                max_size
-            );
-
-            if (parts < 0) {
-                printf("Unable to split article.\n");
-                return;
-            }
-
-            printf("\n");
-            printf("The article will be sent in %d parts.\n", parts);
-
-            snprintf(part_filename,
-                    sizeof(part_filename),
-                    "/tmp/powertools-wikipedia_%02d.txt",
-                    1);
-
-            if (send_transfer_part(part_filename, 1, parts) != 0) {
-                return;
-            }
-
-            printf("\n");
-            printf("Part 1 is complete.\n");
-            printf("Exit the Brother terminal and save the file now.\n");
-            printf("\n");
-            printf("Press ENTER to return to the Internet menu.");
-
-            getchar();
-
-            break;
-        }
-
-        case 2:
-            break;
-
-        default:
-            printf("Invalid option.\n");
-            break;
-    }
 }
