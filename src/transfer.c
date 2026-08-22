@@ -1,6 +1,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
@@ -9,6 +11,149 @@
 
 #define SERIAL_DEVICE "/dev/ttyUSB0"
 #define TRANSFER_DELAY 5
+
+int split_file(const char *input_filename,
+               const char *output_prefix,
+               size_t max_size)
+{
+    FILE *input;
+    FILE *output;
+    char output_filename[512];
+    char line[4096];
+    size_t part_size = 0;
+    int part_number = 1;
+
+    if (max_size == 0) {
+        fprintf(stderr, "Maximum part size must be greater than zero.\n");
+        return -1;
+    }
+
+    input = fopen(input_filename, "r");
+
+    if (input == NULL) {
+        perror("Unable to open input file");
+        return -1;
+    }
+
+    output = NULL;
+
+    while (fgets(line, sizeof(line), input) != NULL) {
+        size_t line_size = strlen(line);
+
+        /*
+         * If this line would exceed the maximum and we already
+         * have content in the current part, start a new part.
+         *
+         * This means we prefer breaking at line/paragraph
+         * boundaries rather than cutting text in half.
+         */
+        if (output != NULL &&
+            part_size > 0 &&
+            part_size + line_size > max_size) {
+
+            fclose(output);
+            output = NULL;
+
+            part_number++;
+            part_size = 0;
+        }
+
+        /*
+         * If the line itself is larger than the requested
+         * maximum, we have to split it. This is our last-resort
+         * boundary.
+         */
+        if (line_size > max_size) {
+            size_t offset = 0;
+
+            while (offset < line_size) {
+                size_t remaining = line_size - offset;
+                size_t amount = remaining < max_size
+                              ? remaining
+                              : max_size;
+
+                snprintf(output_filename,
+                         sizeof(output_filename),
+                         "%s_%02d.txt",
+                         output_prefix,
+                         part_number);
+
+                output = fopen(output_filename, "w");
+
+                if (output == NULL) {
+                    perror("Unable to create output file");
+                    fclose(input);
+                    return -1;
+                }
+
+                fwrite(line + offset, 1, amount, output);
+                fclose(output);
+
+                output = NULL;
+                part_number++;
+                offset += amount;
+            }
+
+            part_size = 0;
+            continue;
+        }
+
+        if (output == NULL) {
+            snprintf(output_filename,
+                     sizeof(output_filename),
+                     "%s_%02d.txt",
+                     output_prefix,
+                     part_number);
+
+            output = fopen(output_filename, "w");
+
+            if (output == NULL) {
+                perror("Unable to create output file");
+                fclose(input);
+                return -1;
+            }
+        }
+
+        fwrite(line, 1, line_size, output);
+        part_size += line_size;
+    }
+
+    if (output != NULL) {
+        fclose(output);
+    }
+
+    fclose(input);
+
+    return part_number;
+}
+
+int send_transfer_part(const char *filename,
+                              int part_number,
+                              int total_parts)
+{
+    printf("\n");
+    printf("+---------------------------------------------+\n");
+    printf("|              Transfer Part                 |\n");
+    printf("+---------------------------------------------+\n");
+    printf("| Part %d of %d                                |\n",
+           part_number, total_parts);
+    printf("+---------------------------------------------+\n");
+    printf("\n");
+
+    printf("\n");
+
+    if (send_ascii_file(filename) != 0) {
+        printf("\nTransfer failed.\n");
+        return -1;
+    }
+
+    printf("\n");
+    printf("Part %d of %d has been sent.\n", part_number, total_parts);
+    printf("\n");
+    printf("Save this file on the Brother before continuing.\n");
+
+    return 0;
+}
 
 int send_ascii_file(const char *filename)
 {
@@ -74,7 +219,8 @@ int send_ascii_file(const char *filename)
     serial_termios.c_cflag |= CS8;
     serial_termios.c_cflag |= CLOCAL | CREAD;
 
-    serial_termios.c_iflag &= ~(IXON | IXOFF | IXANY);
+    serial_termios.c_iflag |= IXON;
+    serial_termios.c_iflag &= ~(IXOFF | IXANY);
 
 #ifdef CRTSCTS
     serial_termios.c_cflag &= ~CRTSCTS;
@@ -107,14 +253,20 @@ int send_ascii_file(const char *filename)
             }
         }
 
-        size_t total_written = 0;
+size_t total_written = 0;
 
-        while (total_written < output_length) {
-            ssize_t written = write(fd,
-                                    output + total_written,
-                                    output_length - total_written);
+while (total_written < output_length) {
+    size_t chunk_size = output_length - total_written;
 
-            if (written < 0) {
+    if (chunk_size > 128) {
+        chunk_size = 128;
+    }
+
+    ssize_t written = write(fd,
+                            output + total_written,
+                            chunk_size);
+
+    if (written < 0) {
                 fprintf(stderr, "Serial write failed: %s\n",
                         strerror(errno));
 

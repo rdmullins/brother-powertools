@@ -3,6 +3,7 @@
 #include <sys/select.h>
 #include <unistd.h>
 
+#include "internet.h"
 #include "transfer.h"
 #include "mail.h"
 #include "games.h"
@@ -68,10 +69,11 @@ int main (void)
             "|   \\_/ |   \\_/  |  | | \\__ |                 |\n"       
             "+---------------------------------------------+\n"
             "|               1. Transfer Text              |\n"
-            "|               2. Games                      |\n"
-            "|               3. BASIC                      |\n"
-            "|               4. Email                      |\n"
-            "|               5. Exit                       |\n"
+            "|               2. Internet                   |\n"
+            "|               3. Games                      |\n"
+            "|               4. BASIC                      |\n"
+            "|               5. Email                      |\n"
+            "|               6. Exit                       |\n"
             "+---------------------------------------------+\n"
             "\n"
             "Enter your choice: "
@@ -87,17 +89,21 @@ int main (void)
                 transfer_menu();
                 break;
             case 2:
+                printf("You selected Internet\n");
+                internet_menu();
+                break;
+            case 3:
                 printf("You selected Games\n");
                 game_menu();
                 break;
-            case 3:
+            case 4:
                 printf("You selected BASIC\n");
                 system("bwbasic");
                 break;
-            case 4:
+            case 5:
                 mail_menu();
                 break;
-            case 5:
+            case 6:
                 printf("Exiting...\n");
                 return;
             default:
