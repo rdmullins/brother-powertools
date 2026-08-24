@@ -16,11 +16,6 @@ void wait_for_enter(void);
 
 int main (void)
 {
-CatalogRecord test_record;
-
-if (catalog_load("data/catalog.db", &test_record) == 0) {
-    cards_print_catalog(&test_record);
-}
 
     splash_screen();
     main_menu();
