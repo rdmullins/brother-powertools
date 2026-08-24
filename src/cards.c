@@ -131,6 +131,128 @@ int card_add_wrapped_text(Card *card, const char *text)
     return 0;
 }
 
+int card_add_hanging_text(Card *card,
+                          const char *text,
+                          int indent)
+{
+    const char *start;
+    int first_line = 1;
+    char line[CARD_WIDTH + 1];
+    size_t line_length = 0;
+
+    if (card == NULL || text == NULL) {
+        return -1;
+    }
+
+    if (indent < 0 || indent >= CARD_WIDTH) {
+        return -1;
+    }
+
+    start = text;
+
+    while (1) {
+        const char *word_start;
+        size_t word_length;
+        size_t available_width;
+
+        /*
+         * Skip spaces between words.
+         */
+        while (*start == ' ') {
+            start++;
+        }
+
+        if (*start == '\0') {
+            break;
+        }
+
+        word_start = start;
+
+        while (*start != '\0' && *start != ' ') {
+            start++;
+        }
+
+        word_length = (size_t)(start - word_start);
+
+        available_width = first_line
+                        ? CARD_WIDTH
+                        : CARD_WIDTH - (size_t)indent;
+
+        /*
+         * A single word cannot fit on a card line.
+         */
+        if (word_length > available_width) {
+            return -1;
+        }
+
+        /*
+         * If the word won't fit on the current line,
+         * finish that line and start a new one.
+         */
+        if (line_length > 0 &&
+            line_length + 1 + word_length > available_width) {
+
+            char output_line[CARD_WIDTH + 1];
+
+            if (first_line) {
+                strcpy(output_line, line);
+            } else {
+                memset(output_line, ' ', (size_t)indent);
+                memcpy(output_line + indent,
+                       line,
+                       line_length);
+
+                output_line[indent + line_length] = '\0';
+            }
+
+            if (card_add_line(card, output_line) != 0) {
+                return -1;
+            }
+
+            first_line = 0;
+            line_length = 0;
+        }
+
+        /*
+         * Add the word to the current line.
+         */
+        if (line_length > 0) {
+            line[line_length++] = ' ';
+        }
+
+        memcpy(line + line_length,
+               word_start,
+               word_length);
+
+        line_length += word_length;
+        line[line_length] = '\0';
+    }
+
+    /*
+     * Add the final line.
+     */
+    if (line_length > 0) {
+        char output_line[CARD_WIDTH + 1];
+
+        if (first_line) {
+            strcpy(output_line, line);
+        } else {
+            memset(output_line, ' ', (size_t)indent);
+            memcpy(output_line + indent,
+                   line,
+                   line_length);
+
+            output_line[indent + line_length] = '\0';
+        }
+
+        if (card_add_line(card, output_line) != 0) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
 void card_print(const Card *card)
 {
     if (card == NULL) {
@@ -167,6 +289,7 @@ static void print_title_card(const CatalogRecord *record)
     card_init(&card);
 
     card_add_wrapped_text(&card, record->title);
+
     card_add_line(&card, "");
     card_add_line(&card, record->author);
 

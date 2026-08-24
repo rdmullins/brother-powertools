@@ -16,5 +16,7 @@ void card_init(Card *card);
 int card_add_line(Card *card, const char *text);
 void card_print(const Card *card);
 int card_add_wrapped_text(Card *card, const char *text);
-
+int card_add_hanging_text(Card *card,
+                          const char *text,
+                          int indent);
 #endif
