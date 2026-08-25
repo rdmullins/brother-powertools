@@ -17,6 +17,8 @@ void wait_for_enter(void);
 int main (void)
 {
 
+
+    
     splash_screen();
     main_menu();
     return 0;
