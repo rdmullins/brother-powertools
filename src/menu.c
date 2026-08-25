@@ -11,6 +11,7 @@
 #include "catalog.h"
 #include "bibliography.h"
 #include "cards.h"
+#include "notes.h"
 
 void splash_screen(void);
 void main_menu(void);
