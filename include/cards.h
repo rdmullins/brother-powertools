@@ -4,7 +4,7 @@
 #define CARD_HEIGHT 15
 
 #include "catalog.h"
-
+#include "bibliography.h"
 void cards_print_catalog(const CatalogRecord *record);
 
 typedef struct {
@@ -19,4 +19,5 @@ int card_add_wrapped_text(Card *card, const char *text);
 int card_add_hanging_text(Card *card,
                           const char *text,
                           int indent);
+int cards_print_bibliography(const BibliographyRecord *record);                          
 #endif

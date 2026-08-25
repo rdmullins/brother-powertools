@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "cards.h"
+#include "citation.h"
 
 #define SUBJECT_BUFFER_SIZE 1024
 
@@ -334,4 +335,32 @@ void cards_print_catalog(const CatalogRecord *record)
     print_author_card(record);
     print_title_card(record);
     print_subject_cards(record);
+}
+
+int cards_print_bibliography(const BibliographyRecord *record)
+{
+    Card card;
+    char citation[CITATION_MAX_LENGTH];
+
+    if (record == NULL) {
+        return -1;
+    }
+
+    if (citation_generate(record,
+                           citation,
+                           sizeof(citation)) != 0) {
+        return -1;
+    }
+
+    card_init(&card);
+
+    if (card_add_hanging_text(&card,
+                              citation,
+                              4) != 0) {
+        return -1;
+    }
+
+    card_print(&card);
+
+    return 0;
 }

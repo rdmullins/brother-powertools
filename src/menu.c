@@ -9,6 +9,8 @@
 #include "games.h"
 #include "cards.h"
 #include "catalog.h"
+#include "bibliography.h"
+#include "cards.h"
 
 void splash_screen(void);
 void main_menu(void);
