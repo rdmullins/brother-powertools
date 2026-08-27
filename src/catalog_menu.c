@@ -1,21 +1,20 @@
 #include <stdio.h>
 
-#include "library_menu.h"
 #include "catalog_menu.h"
+#include "catalog_add.h"
 
-void library_menu(void)
+void catalog_menu(void)
 {
     int choice;
 
     do {
         printf("\n");
-        printf("Library\n");
+        printf("Catalog\n");
         printf("-------\n");
-        printf("1. Catalog\n");
-        printf("2. Bibliography\n");
-        printf("3. Research Notes\n");
-        printf("4. Print Cards\n");
-        printf("5. Back\n");
+        printf("1. Add Book\n");
+        printf("2. Find Book\n");
+        printf("3. Print Catalog Cards\n");
+        printf("4. Back\n");
         printf("\n");
         printf("Select: ");
 
@@ -32,22 +31,18 @@ void library_menu(void)
 
         switch (choice) {
         case 1:
-            catalog_menu();
+            catalog_add_menu();
             break;
 
         case 2:
-            printf("\nBibliography functionality coming soon.\n");
+            printf("\nFind Book functionality coming soon.\n");
             break;
 
         case 3:
-            printf("\nResearch note functionality coming soon.\n");
+            printf("\nCatalog card printing coming soon.\n");
             break;
 
         case 4:
-            printf("\nCard printing functionality coming soon.\n");
-            break;
-
-        case 5:
             break;
 
         default:
@@ -55,5 +50,5 @@ void library_menu(void)
             break;
         }
 
-    } while (choice != 5);
+    } while (choice != 4);
 }
