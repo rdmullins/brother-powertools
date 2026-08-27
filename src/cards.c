@@ -254,20 +254,22 @@ int card_add_hanging_text(Card *card,
     return 0;
 }
 
-void card_print(const Card *card)
+void card_print_file(const Card *card, FILE *output)
 {
-    if (card == NULL) {
+    int i;
+
+    if (card == NULL || output == NULL) {
         return;
     }
 
-    for (int i = 0; i < CARD_HEIGHT; i++) {
-        printf("%s\n", card->lines[i]);
+    for (i = 0; i < card->line_count; i++) {
+        fprintf(output, "%s\n", card->lines[i]);
     }
+}
 
-    /*
-     * Separate physical cards during testing.
-     */
-    printf("\n");
+void card_print(const Card *card)
+{
+    card_print_file(card, stdout);
 }
 
 static void print_author_card(const CatalogRecord *record)
@@ -361,6 +363,181 @@ int cards_print_bibliography(const BibliographyRecord *record)
     }
 
     card_print(&card);
+
+    return 0;
+}
+
+int card_build_note(const NoteRecord *record, Card *card)
+{
+
+    int reserved_lines = 2;
+    int available_lines;
+
+    if (record == NULL) {
+        return -1;
+    }
+
+    card_init(card);
+
+    /*
+     * The final two lines are reserved for the source
+     * and locator.
+     */
+    available_lines = CARD_HEIGHT - reserved_lines;
+
+    /*
+     * Optional title.
+     */
+    if (record->title[0] != '\0') {
+        if (card_add_wrapped_text(card,
+                                  record->title) != 0) {
+            return -1;
+        }
+
+        /*
+         * Leave one blank line between the title and
+         * the note body.
+         */
+        if (card->line_count >= available_lines) {
+            return -1;
+        }
+
+        if (card_add_line(card, "") != 0) {
+            return -1;
+        }
+    }
+
+    /*
+     * Add the note itself.
+     */
+    if (card_add_wrapped_text(card,
+                              record->text) != 0) {
+        return -1;
+    }
+
+    /*
+     * The note body must leave two lines for the
+     * source/locator block.
+     */
+    if (card->line_count > available_lines) {
+        return -1;
+    }
+
+    /*
+     * Pad until we reach the source/locator area.
+     */
+    while (card->line_count < available_lines) {
+        if (card_add_line(card, "") != 0) {
+            return -1;
+        }
+    }
+
+    /*
+     * Source and locator occupy the final two lines.
+     * For now, right-align them against the 47-column
+     * card width.
+     */
+    {
+        char source_line[CARD_WIDTH + 1];
+        char locator_line[CARD_WIDTH + 1];
+
+        int written;
+
+        written = snprintf(source_line,
+                           sizeof(source_line),
+                           "Source %s",
+                           record->source);
+
+        if (written < 0 || written > CARD_WIDTH) {
+            return -1;
+        }
+
+        written = snprintf(locator_line,
+                           sizeof(locator_line),
+                           "%s",
+                           record->locator);
+
+        if (written < 0 || written > CARD_WIDTH) {
+            return -1;
+        }
+
+        /*
+         * Right-align both attribution lines.
+         */
+        {
+            char formatted_source[CARD_WIDTH + 1];
+            char formatted_locator[CARD_WIDTH + 1];
+            size_t source_length = strlen(source_line);
+            size_t locator_length = strlen(locator_line);
+
+            memset(formatted_source, ' ', CARD_WIDTH);
+            memset(formatted_locator, ' ', CARD_WIDTH);
+
+            memcpy(formatted_source +
+                       CARD_WIDTH - source_length,
+                   source_line,
+                   source_length);
+
+            memcpy(formatted_locator +
+                       CARD_WIDTH - locator_length,
+                   locator_line,
+                   locator_length);
+
+            formatted_source[CARD_WIDTH] = '\0';
+            formatted_locator[CARD_WIDTH] = '\0';
+
+            if (card_add_line(card,
+                              formatted_source) != 0) {
+                return -1;
+            }
+
+            if (card_add_line(card,
+                              formatted_locator) != 0) {
+                return -1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+int cards_print_note(const NoteRecord *record)
+{
+    Card card;
+
+    if (card_build_note(record, &card) != 0) {
+        return -1;
+    }
+
+    card_print(&card);
+
+    return 0;
+}
+
+int cards_write_note(const NoteRecord *record,
+                     const char *filename)
+{
+    Card card;
+    FILE *output;
+
+    if (record == NULL || filename == NULL) {
+        return -1;
+    }
+
+    if (card_build_note(record, &card) != 0) {
+        return -1;
+    }
+
+    output = fopen(filename, "w");
+
+    if (output == NULL) {
+        perror("Unable to open card file");
+        return -1;
+    }
+
+    card_print_file(&card, output);
+
+    fclose(output);
 
     return 0;
 }

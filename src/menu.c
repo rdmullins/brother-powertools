@@ -13,6 +13,7 @@
 #include "cards.h"
 #include "notes.h"
 
+
 void splash_screen(void);
 void main_menu(void);
 void wait_for_enter(void);
@@ -20,8 +21,6 @@ void wait_for_enter(void);
 int main (void)
 {
 
-
-    
     splash_screen();
     main_menu();
     return 0;
