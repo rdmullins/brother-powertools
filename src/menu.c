@@ -12,6 +12,7 @@
 #include "bibliography.h"
 #include "cards.h"
 #include "notes.h"
+#include "library_menu.h"
 
 
 void splash_screen(void);
@@ -75,12 +76,12 @@ int main (void)
             "|   | | |   | |  |  | | |_| |      v0.0.1     |\n"
             "|   \\_/ |   \\_/  |  | | \\__ |                 |\n"       
             "+---------------------------------------------+\n"
-            "|               1. Transfer Text              |\n"
-            "|               2. Internet                   |\n"
-            "|               3. Games                      |\n"
-            "|               4. BASIC                      |\n"
-            "|               5. Email                      |\n"
-            "|               6. Exit                       |\n"
+            "|     1. File Transfer     6. Library         |\n"
+            "|     2. Internet          7. System          |\n"
+            "|     3. Games                                |\n"
+            "|     4. BASIC                                |\n"
+            "|     5. Email                                |\n"
+            "|                 8. Exit                     |\n"
             "+---------------------------------------------+\n"
             "\n"
             "Enter your choice: "
@@ -111,6 +112,14 @@ int main (void)
                 mail_menu();
                 break;
             case 6:
+                printf("You selected Library\n");
+                library_menu();
+                break;
+            case 7:
+                printf("You selected System\n");
+                //system_menu();
+                break;
+            case 8:
                 printf("Exiting...\n");
                 return;
             default:
