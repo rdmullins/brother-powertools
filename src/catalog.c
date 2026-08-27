@@ -15,12 +15,18 @@ static void copy_field(char *destination,
     destination[destination_size - 1] = '\0';
 }
 
-int catalog_load(const char *filename, CatalogRecord *record)
+int catalog_load(const char *filename,
+                 const char *wanted_id,
+                 CatalogRecord *record)
 {
     FILE *file;
     char line[2048];
+    CatalogRecord current;
+    int in_record = 0;
 
-    if (filename == NULL || record == NULL) {
+    if (filename == NULL ||
+        wanted_id == NULL ||
+        record == NULL) {
         return -1;
     }
 
@@ -31,7 +37,7 @@ int catalog_load(const char *filename, CatalogRecord *record)
         return -1;
     }
 
-    memset(record, 0, sizeof(*record));
+    memset(&current, 0, sizeof(current));
 
     while (fgets(line, sizeof(line), file) != NULL) {
         char *equals;
@@ -41,7 +47,17 @@ int catalog_load(const char *filename, CatalogRecord *record)
         line[strcspn(line, "\r\n")] = '\0';
 
         if (strcmp(line, "---") == 0) {
-            break;
+            if (in_record &&
+                strcmp(current.id, wanted_id) == 0) {
+
+                *record = current;
+                fclose(file);
+                return 0;
+            }
+
+            memset(&current, 0, sizeof(current));
+            in_record = 0;
+            continue;
         }
 
         equals = strchr(line, '=');
@@ -55,38 +71,86 @@ int catalog_load(const char *filename, CatalogRecord *record)
         key = line;
         value = equals + 1;
 
+        in_record = 1;
+
         if (strcmp(key, "ID") == 0) {
-            copy_field(record->id,
-                       sizeof(record->id),
+            copy_field(current.id,
+                       sizeof(current.id),
                        value);
+
+        } else if (strcmp(key, "ISBN") == 0) {
+            copy_field(current.isbn,
+                       sizeof(current.isbn),
+                       value);
+
         } else if (strcmp(key, "AUTHOR") == 0) {
-            copy_field(record->author,
-                       sizeof(record->author),
+            copy_field(current.author,
+                       sizeof(current.author),
                        value);
+
         } else if (strcmp(key, "TITLE") == 0) {
-            copy_field(record->title,
-                       sizeof(record->title),
+            copy_field(current.title,
+                       sizeof(current.title),
                        value);
+
         } else if (strcmp(key, "PLACE") == 0) {
-            copy_field(record->place,
-                       sizeof(record->place),
+            copy_field(current.place,
+                       sizeof(current.place),
                        value);
+
         } else if (strcmp(key, "PUBLISHER") == 0) {
-            copy_field(record->publisher,
-                       sizeof(record->publisher),
+            copy_field(current.publisher,
+                       sizeof(current.publisher),
                        value);
+
         } else if (strcmp(key, "YEAR") == 0) {
-            copy_field(record->year,
-                       sizeof(record->year),
+            copy_field(current.year,
+                       sizeof(current.year),
                        value);
+
         } else if (strcmp(key, "SUBJECTS") == 0) {
-            copy_field(record->subjects,
-                       sizeof(record->subjects),
+            copy_field(current.subjects,
+                       sizeof(current.subjects),
                        value);
+        } else if (strcmp(key, "LOCATION") == 0) {
+            copy_field(current.location,
+                       sizeof(current.location),
+                       value);
+        
         }
+    }
+
+    /*
+     * Handle a final record even if the file does not end
+     * with a --- separator.
+     */
+    if (in_record &&
+        strcmp(current.id, wanted_id) == 0) {
+
+        *record = current;
+        fclose(file);
+        return 0;
     }
 
     fclose(file);
 
-    return 0;
+    return 1;
+}
+
+void catalog_display(const CatalogRecord *record)
+{
+    if (record == NULL) {
+        return;
+    }
+
+    printf("\n");
+    printf("ID:        %s\n", record->id);
+    printf("ISBN:      %s\n", record->isbn);
+    printf("Author:    %s\n", record->author);
+    printf("Title:     %s\n", record->title);
+    printf("Place:     %s\n", record->place);
+    printf("Publisher: %s\n", record->publisher);
+    printf("Year:      %s\n", record->year);
+    printf("Subjects:  %s\n", record->subjects);
+    printf("Location:  %s\n", record->location);
 }
