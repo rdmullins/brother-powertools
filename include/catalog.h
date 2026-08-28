@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 #ifndef CATALOG_H
 #define CATALOG_H
 
@@ -27,5 +29,12 @@ int catalog_load(const char *filename,
                  CatalogRecord *record);
 
 void catalog_display(const CatalogRecord *record);
+
+int catalog_save(const char *filename,
+                 const CatalogRecord *record);
+
+int catalog_next_id(const char *filename,
+                    char *id,
+                    size_t id_size);
 
 #endif

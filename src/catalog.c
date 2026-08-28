@@ -154,3 +154,76 @@ void catalog_display(const CatalogRecord *record)
     printf("Subjects:  %s\n", record->subjects);
     printf("Location:  %s\n", record->location);
 }
+
+int catalog_save(const char *filename,
+                 const CatalogRecord *record)
+{
+    FILE *file;
+
+    if (filename == NULL || record == NULL) {
+        return -1;
+    }
+
+    file = fopen(filename, "a");
+
+    if (file == NULL) {
+        perror("Unable to open catalog");
+        return -1;
+    }
+
+    fprintf(file, "ID=%s\n", record->id);
+    fprintf(file, "ISBN=%s\n", record->isbn);
+    fprintf(file, "AUTHOR=%s\n", record->author);
+    fprintf(file, "TITLE=%s\n", record->title);
+    fprintf(file, "PLACE=%s\n", record->place);
+    fprintf(file, "PUBLISHER=%s\n", record->publisher);
+    fprintf(file, "YEAR=%s\n", record->year);
+    fprintf(file, "SUBJECTS=%s\n", record->subjects);
+    fprintf(file, "LOCATION=%s\n", record->location);
+    fprintf(file, "---\n");
+
+    fclose(file);
+
+    return 0;
+}
+
+int catalog_next_id(const char *filename,
+                    char *id,
+                    size_t id_size)
+{
+    FILE *file;
+    char line[2048];
+    int highest_id = 0;
+
+    if (filename == NULL ||
+        id == NULL ||
+        id_size == 0) {
+        return -1;
+    }
+
+    file = fopen(filename, "r");
+
+    if (file == NULL) {
+        perror("Unable to open catalog");
+        return -1;
+    }
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+        int current_id;
+
+        if (sscanf(line, "ID=%d", &current_id) == 1) {
+            if (current_id > highest_id) {
+                highest_id = current_id;
+            }
+        }
+    }
+
+    fclose(file);
+
+    snprintf(id,
+             id_size,
+             "%06d",
+             highest_id + 1);
+
+    return 0;
+}
