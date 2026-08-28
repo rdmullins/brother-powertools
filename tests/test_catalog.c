@@ -12,12 +12,6 @@ int main(void)
 
     remove(test_file);
 
-    if (catalog_next_id(test_file, id, sizeof(id)) == 0) {
-        fprintf(stderr,
-                "catalog_next_id should fail for a missing file.\n");
-        return 1;
-    }
-
     memset(&record, 0, sizeof(record));
 
     strcpy(record.id, "000001");

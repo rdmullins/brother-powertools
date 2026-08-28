@@ -37,4 +37,9 @@ int catalog_next_id(const char *filename,
                     char *id,
                     size_t id_size);
 
+int catalog_search(const char *filename,
+                   const char *query,
+                   CatalogRecord *results,
+                   size_t max_results);
+
 #endif

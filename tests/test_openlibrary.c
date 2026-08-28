@@ -4,10 +4,10 @@
 
 int main(void)
 {
-    CatalogRecord record;
+    OpenLibraryBook book;
 
     if (openlibrary_lookup_isbn("9780451532244",
-                                &record) != 0) {
+                                &book) != 0) {
         fprintf(stderr,
                 "Open Library lookup failed.\n");
         return 1;
@@ -15,12 +15,12 @@ int main(void)
 
     printf("Open Library lookup succeeded.\n");
     printf("\n");
-    printf("ISBN:      %s\n", record.isbn);
-    printf("Author:    %s\n", record.author);
-    printf("Title:     %s\n", record.title);
-    printf("Publisher: %s\n", record.publisher);
-    printf("Year:      %s\n", record.year);
-    printf("Subjects:  %s\n", record.subjects);
+    printf("ISBN:      %s\n", book.isbn);
+    printf("Author:    %s\n", book.author);
+    printf("Title:     %s\n", book.title);
+    printf("Publisher: %s\n", book.publisher);
+    printf("Date:      %s\n", book.publish_date);
+    printf("Subjects:  %d found\n", book.subject_count);
 
     return 0;
 }

@@ -3,6 +3,7 @@
 #include "catalog_menu.h"
 #include "catalog_add.h"
 #include "catalog.h"
+#include "catalog_find.h"
 
 void catalog_menu(void)
 {
@@ -36,29 +37,8 @@ void catalog_menu(void)
             break;
 
         case 2:
-        {
-            char id[32];
-            CatalogRecord record;
-
-            printf("\nFind Book\n");
-            printf("---------\n");
-            printf("Catalog ID: ");
-
-            if (scanf("%31s", id) != 1) {
-                printf("Invalid input.\n");
-                break;
-            }
-
-            if (catalog_load("data/catalog.db",
-                            id,
-                            &record) == 0) {
-                catalog_display(&record);
-            } else {
-                printf("Book not found.\n");
-            }
-
+            catalog_find_menu();
             break;
-        }
 
         case 3:
             printf("\nCatalog card printing coming soon.\n");

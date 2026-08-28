@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 
 #include "catalog.h"
 
@@ -135,6 +136,169 @@ int catalog_load(const char *filename,
     fclose(file);
 
     return 1;
+}
+
+static int contains_case_insensitive(const char *text,
+                                     const char *query)
+{
+    size_t query_length;
+
+    if (text == NULL || query == NULL) {
+        return 0;
+    }
+
+    query_length = strlen(query);
+
+    if (query_length == 0) {
+        return 1;
+    }
+
+    for (; *text != '\0'; text++) {
+        if (strncasecmp(text, query, query_length) == 0) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static int catalog_record_matches(const CatalogRecord *record,
+                                  const char *query)
+{
+    return contains_case_insensitive(record->id, query) ||
+           contains_case_insensitive(record->isbn, query) ||
+           contains_case_insensitive(record->author, query) ||
+           contains_case_insensitive(record->title, query) ||
+           contains_case_insensitive(record->place, query) ||
+           contains_case_insensitive(record->publisher, query) ||
+           contains_case_insensitive(record->year, query) ||
+           contains_case_insensitive(record->subjects, query) ||
+           contains_case_insensitive(record->location, query);
+}
+
+int catalog_search(const char *filename,
+                   const char *query,
+                   CatalogRecord *results,
+                   size_t max_results)
+{
+    FILE *file;
+    char line[2048];
+    CatalogRecord current;
+    size_t result_count = 0;
+    int in_record = 0;
+
+    if (filename == NULL ||
+        query == NULL ||
+        results == NULL ||
+        max_results == 0) {
+        return -1;
+    }
+
+    file = fopen(filename, "r");
+
+    if (file == NULL) {
+        perror("Unable to open catalog");
+        return -1;
+    }
+
+    memset(&current, 0, sizeof(current));
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+        char *equals;
+        char *key;
+        char *value;
+
+        line[strcspn(line, "\r\n")] = '\0';
+
+        if (strcmp(line, "---") == 0) {
+            if (in_record &&
+                catalog_record_matches(&current, query)) {
+
+                if (result_count < max_results) {
+                    results[result_count] = current;
+                    result_count++;
+                }
+            }
+
+            memset(&current, 0, sizeof(current));
+            in_record = 0;
+            continue;
+        }
+
+        equals = strchr(line, '=');
+
+        if (equals == NULL) {
+            continue;
+        }
+
+        *equals = '\0';
+
+        key = line;
+        value = equals + 1;
+
+        in_record = 1;
+
+        if (strcmp(key, "ID") == 0) {
+            copy_field(current.id,
+                       sizeof(current.id),
+                       value);
+
+        } else if (strcmp(key, "ISBN") == 0) {
+            copy_field(current.isbn,
+                       sizeof(current.isbn),
+                       value);
+
+        } else if (strcmp(key, "AUTHOR") == 0) {
+            copy_field(current.author,
+                       sizeof(current.author),
+                       value);
+
+        } else if (strcmp(key, "TITLE") == 0) {
+            copy_field(current.title,
+                       sizeof(current.title),
+                       value);
+
+        } else if (strcmp(key, "PLACE") == 0) {
+            copy_field(current.place,
+                       sizeof(current.place),
+                       value);
+
+        } else if (strcmp(key, "PUBLISHER") == 0) {
+            copy_field(current.publisher,
+                       sizeof(current.publisher),
+                       value);
+
+        } else if (strcmp(key, "YEAR") == 0) {
+            copy_field(current.year,
+                       sizeof(current.year),
+                       value);
+
+        } else if (strcmp(key, "SUBJECTS") == 0) {
+            copy_field(current.subjects,
+                       sizeof(current.subjects),
+                       value);
+
+        } else if (strcmp(key, "LOCATION") == 0) {
+            copy_field(current.location,
+                       sizeof(current.location),
+                       value);
+        }
+    }
+
+    /*
+     * Handle a final record without a --- separator.
+     */
+    if (in_record &&
+        result_count < max_results &&
+        catalog_record_matches(&current, query)) {
+
+        results[result_count] = current;
+        result_count++;
+    }
+
+    fclose(file);
+
+    return (int)result_count;
 }
 
 void catalog_display(const CatalogRecord *record)
