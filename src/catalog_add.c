@@ -6,6 +6,8 @@
 #include "catalog_add.h"
 #include "catalog.h"
 #include "openlibrary.h"
+#include "card_set.h"
+#include "cards.h"
 
 static int catalog_add_select_subjects(const OpenLibraryBook *book,
                                        CatalogRecord *record)
