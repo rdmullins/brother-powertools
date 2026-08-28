@@ -15,6 +15,8 @@ typedef struct {
     int line_count;
 } Card;
 
+typedef struct CardSet CardSet;
+
 void card_init(Card *card);
 int card_add_line(Card *card, const char *text);
 void card_print(const Card *card);
@@ -28,4 +30,6 @@ int cards_print_note(const NoteRecord *record);
 int cards_write_note(const NoteRecord *record,
                      const char *filename);       
 int card_build_note(const NoteRecord *record, Card *card);    
+int cards_build_catalog(const CatalogRecord *record,
+                        CardSet *set);
 #endif

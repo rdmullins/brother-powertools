@@ -3,6 +3,7 @@
 
 #include "cards.h"
 #include "citation.h"
+#include "card_set.h"
 
 #define SUBJECT_BUFFER_SIZE 1024
 
@@ -272,37 +273,63 @@ void card_print(const Card *card)
     card_print_file(card, stdout);
 }
 
-static void print_author_card(const CatalogRecord *record)
+static int build_author_card(const CatalogRecord *record,
+                             Card *card)
 {
-    Card card;
+    if (record == NULL || card == NULL) {
+        return -1;
+    }
 
-    card_init(&card);
+    card_init(card);
 
-    card_add_line(&card, record->author);
-    card_add_line(&card, "");
-    card_add_wrapped_text(&card, record->title);
+    if (card_add_line(card, record->author) != 0) {
+        return -1;
+    }
 
-    card_print(&card);
+    if (card_add_line(card, "") != 0) {
+        return -1;
+    }
+
+    if (card_add_wrapped_text(card, record->title) != 0) {
+        return -1;
+    }
+
+    return 0;
 }
 
-static void print_title_card(const CatalogRecord *record)
+static int build_title_card(const CatalogRecord *record,
+                            Card *card)
 {
-    Card card;
+    if (record == NULL || card == NULL) {
+        return -1;
+    }
 
-    card_init(&card);
+    card_init(card);
 
-    card_add_wrapped_text(&card, record->title);
+    if (card_add_wrapped_text(card, record->title) != 0) {
+        return -1;
+    }
 
-    card_add_line(&card, "");
-    card_add_line(&card, record->author);
+    if (card_add_line(card, "") != 0) {
+        return -1;
+    }
 
-    card_print(&card);
+    if (card_add_line(card, record->author) != 0) {
+        return -1;
+    }
+
+    return 0;
 }
 
-static void print_subject_cards(const CatalogRecord *record)
+static int build_subject_cards(const CatalogRecord *record,
+                               CardSet *set)
 {
     char subjects[SUBJECT_BUFFER_SIZE];
     char *subject;
+
+    if (record == NULL || set == NULL) {
+        return -1;
+    }
 
     strncpy(subjects,
             record->subjects,
@@ -317,26 +344,81 @@ static void print_subject_cards(const CatalogRecord *record)
 
         card_init(&card);
 
-        card_add_line(&card, subject);
-        card_add_line(&card, "");
-        card_add_line(&card, record->author);
-        card_add_line(&card, record->title);
+        if (card_add_line(&card, subject) != 0) {
+            return -1;
+        }
 
-        card_print(&card);
+        if (card_add_line(&card, "") != 0) {
+            return -1;
+        }
+
+        if (card_add_line(&card, record->author) != 0) {
+            return -1;
+        }
+
+        if (card_add_line(&card, record->title) != 0) {
+            return -1;
+        }
+
+        if (card_set_add(set, &card) != 0) {
+            return -1;
+        }
 
         subject = strtok(NULL, ";");
     }
+
+    return 0;
+}
+
+int cards_build_catalog(const CatalogRecord *record,
+                        CardSet *set)
+{
+    Card card;
+
+    if (record == NULL || set == NULL) {
+        return -1;
+    }
+
+    card_set_init(set);
+
+    if (build_author_card(record, &card) != 0) {
+        return -1;
+    }
+
+    if (card_set_add(set, &card) != 0) {
+        return -1;
+    }
+
+    if (build_title_card(record, &card) != 0) {
+        return -1;
+    }
+
+    if (card_set_add(set, &card) != 0) {
+        return -1;
+    }
+
+    if (build_subject_cards(record, set) != 0) {
+        return -1;
+    }
+
+    return 0;
 }
 
 void cards_print_catalog(const CatalogRecord *record)
 {
+    CardSet set;
+
     if (record == NULL) {
         return;
     }
 
-    print_author_card(record);
-    print_title_card(record);
-    print_subject_cards(record);
+    if (cards_build_catalog(record, &set) != 0) {
+        return;
+    }
+
+    for (int i = 0; i < set.count; i++) {
+        card_print(&set.cards[i]);
+    }
 }
 
 int cards_print_bibliography(const BibliographyRecord *record)

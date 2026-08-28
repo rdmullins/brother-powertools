@@ -7,7 +7,7 @@
 
 #define CARD_SET_MAX_CARDS 256
 
-typedef struct {
+typedef struct CardSet {
     Card cards[CARD_SET_MAX_CARDS];
     int count;
 } CardSet;
