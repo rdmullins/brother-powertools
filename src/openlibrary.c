@@ -7,7 +7,7 @@
 
 #include "openlibrary.h"
 
-#define OPENLIBRARY_MAX_SUBJECTS 10
+#define OPENLIBRARY_URL_MAX 256
 
 typedef struct {
     char *data;
@@ -42,10 +42,10 @@ static size_t write_callback(void *contents,
     return total;
 }
 
-static void copy_string_field(char *destination,
-                              size_t destination_size,
-                              struct json_object *object,
-                              const char *key)
+static void copy_json_string(char *destination,
+                             size_t destination_size,
+                             struct json_object *object,
+                             const char *key)
 {
     struct json_object *value;
 
@@ -71,25 +71,25 @@ static void copy_string_field(char *destination,
 }
 
 int openlibrary_lookup_isbn(const char *isbn,
-                            CatalogRecord *record)
+                            OpenLibraryBook *book)
 {
     CURL *curl;
     CURLcode result;
     ResponseBuffer response = { NULL, 0 };
     struct json_object *root;
-    struct json_object *book;
-    struct json_object *authors;
-    struct json_object *author;
-    struct json_object *publishers;
-    struct json_object *publisher;
-    struct json_object *subjects;
-    size_t i;
+    struct json_object *edition;
+    char url[OPENLIBRARY_URL_MAX];
 
-    if (isbn == NULL || record == NULL) {
+    if (isbn == NULL || book == NULL) {
         return -1;
     }
 
-    memset(record, 0, sizeof(*record));
+    memset(book, 0, sizeof(*book));
+
+    snprintf(book->isbn,
+             sizeof(book->isbn),
+             "%s",
+             isbn);
 
     curl = curl_easy_init();
 
@@ -97,29 +97,21 @@ int openlibrary_lookup_isbn(const char *isbn,
         return -1;
     }
 
-    {
-        char url[256];
+    snprintf(url,
+             sizeof(url),
+             "https://openlibrary.org/api/books?bibkeys=ISBN:%s&jscmd=data&format=json",
+             isbn);
 
-        snprintf(url,
-                 sizeof(url),
-                 "https://openlibrary.org/api/books?bibkeys=ISBN:%s&jscmd=data&format=json",
-                 isbn);
-
-        curl_easy_setopt(curl, CURLOPT_URL, url);
-    }
-
+    curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl,
                      CURLOPT_USERAGENT,
                      "BrotherPowerTools/1.0");
-
     curl_easy_setopt(curl,
                      CURLOPT_WRITEFUNCTION,
                      write_callback);
-
     curl_easy_setopt(curl,
                      CURLOPT_WRITEDATA,
                      &response);
-
     curl_easy_setopt(curl,
                      CURLOPT_FOLLOWLOCATION,
                      1L);
@@ -148,12 +140,13 @@ int openlibrary_lookup_isbn(const char *isbn,
     free(response.data);
 
     if (root == NULL) {
-        fprintf(stderr, "Unable to parse Open Library response.\n");
+        fprintf(stderr,
+                "Unable to parse Open Library response.\n");
         return -1;
     }
 
     {
-        char key[64];
+        char key[OPENLIBRARY_URL_MAX];
 
         snprintf(key,
                  sizeof(key),
@@ -162,142 +155,107 @@ int openlibrary_lookup_isbn(const char *isbn,
 
         if (!json_object_object_get_ex(root,
                                        key,
-                                       &book)) {
+                                       &edition)) {
             json_object_put(root);
             return 1;
         }
     }
 
-    copy_string_field(record->title,
-                      sizeof(record->title),
-                      book,
-                      "title");
+    copy_json_string(book->title,
+                     sizeof(book->title),
+                     edition,
+                     "title");
 
-    if (json_object_object_get_ex(book,
-                                   "authors",
-                                   &authors) &&
-        json_object_is_type(authors, json_type_array) &&
-        json_object_array_length(authors) > 0) {
+    copy_json_string(book->publish_date,
+                     sizeof(book->publish_date),
+                     edition,
+                     "publish_date");
 
-        author = json_object_array_get_idx(authors, 0);
+    {
+        struct json_object *authors;
 
-        copy_string_field(record->author,
-                          sizeof(record->author),
-                          author,
-                          "name");
-    }
+        if (json_object_object_get_ex(edition,
+                                       "authors",
+                                       &authors) &&
+            json_object_is_type(authors,
+                                json_type_array) &&
+            json_object_array_length(authors) > 0) {
 
-    if (json_object_object_get_ex(book,
-                                   "publishers",
-                                   &publishers) &&
-        json_object_is_type(publishers, json_type_array) &&
-        json_object_array_length(publishers) > 0) {
+            struct json_object *author =
+                json_object_array_get_idx(authors, 0);
 
-        publisher = json_object_array_get_idx(publishers, 0);
-
-        copy_string_field(record->publisher,
-                          sizeof(record->publisher),
-                          publisher,
-                          "name");
-    }
-
-{
-    struct json_object *identifiers;
-    struct json_object *isbn_13;
-
-    if (json_object_object_get_ex(book,
-                                   "identifiers",
-                                   &identifiers) &&
-        json_object_is_type(identifiers,
-                            json_type_object) &&
-        json_object_object_get_ex(identifiers,
-                                   "isbn_13",
-                                   &isbn_13) &&
-        json_object_is_type(isbn_13,
-                            json_type_array) &&
-        json_object_array_length(isbn_13) > 0) {
-
-        isbn_13 = json_object_array_get_idx(isbn_13, 0);
-
-        if (json_object_is_type(isbn_13,
-                                json_type_string)) {
-            strncpy(record->isbn,
-                    json_object_get_string(isbn_13),
-                    sizeof(record->isbn) - 1);
-
-            record->isbn[sizeof(record->isbn) - 1] = '\0';
+            copy_json_string(book->author,
+                             sizeof(book->author),
+                             author,
+                             "name");
         }
-    }
-}
-
-    if (record->isbn[0] == '\0') {
-        strncpy(record->isbn,
-                isbn,
-                sizeof(record->isbn) - 1);
-
-        record->isbn[sizeof(record->isbn) - 1] = '\0';
     }
 
     {
-        struct json_object *publish_date;
+        struct json_object *publishers;
 
-        if (json_object_object_get_ex(book,
-                                       "publish_date",
-                                       &publish_date) &&
-            json_object_is_type(publish_date,
-                                json_type_string)) {
+        if (json_object_object_get_ex(edition,
+                                       "publishers",
+                                       &publishers) &&
+            json_object_is_type(publishers,
+                                json_type_array) &&
+            json_object_array_length(publishers) > 0) {
 
-            const char *date =
-                json_object_get_string(publish_date);
+            struct json_object *publisher =
+                json_object_array_get_idx(publishers, 0);
 
-            strncpy(record->year,
-                    date,
-                    sizeof(record->year) - 1);
-
-            record->year[sizeof(record->year) - 1] = '\0';
+            copy_json_string(book->publisher,
+                             sizeof(book->publisher),
+                             publisher,
+                             "name");
         }
     }
 
-    if (json_object_object_get_ex(book,
-                                   "subjects",
-                                   &subjects) &&
-        json_object_is_type(subjects, json_type_array)) {
+    {
+        struct json_object *subjects;
 
-        size_t subject_count =
-            json_object_array_length(subjects);
+        if (json_object_object_get_ex(edition,
+                                       "subjects",
+                                       &subjects) &&
+            json_object_is_type(subjects,
+                                json_type_array)) {
 
-        if (subject_count > OPENLIBRARY_MAX_SUBJECTS) {
-            subject_count = OPENLIBRARY_MAX_SUBJECTS;
-        }
+            size_t count =
+                json_object_array_length(subjects);
 
-        for (i = 0; i < subject_count; i++) {
-            struct json_object *subject;
-            struct json_object *name;
-            const char *subject_name;
-
-            subject = json_object_array_get_idx(subjects, i);
-
-            if (!json_object_object_get_ex(subject,
-                                            "name",
-                                            &name) ||
-                !json_object_is_type(name,
-                                     json_type_string)) {
-                continue;
+            if (count > OPENLIBRARY_MAX_SUBJECTS) {
+                count = OPENLIBRARY_MAX_SUBJECTS;
             }
 
-            subject_name = json_object_get_string(name);
+            for (size_t i = 0; i < count; i++) {
+                struct json_object *subject;
+                struct json_object *name;
 
-            if (record->subjects[0] != '\0') {
-                strncat(record->subjects,
-                        ";",
-                        sizeof(record->subjects) -
-                        strlen(record->subjects) - 1);
+                subject =
+                    json_object_array_get_idx(subjects, i);
+
+                if (!json_object_object_get_ex(
+                        subject,
+                        "name",
+                        &name)) {
+                    continue;
+                }
+
+                if (!json_object_is_type(name,
+                                         json_type_string)) {
+                    continue;
+                }
+
+                strncpy(book->subjects[book->subject_count],
+                        json_object_get_string(name),
+                        OPENLIBRARY_MAX_SUBJECT_LENGTH - 1);
+
+                book->subjects[book->subject_count]
+                              [OPENLIBRARY_MAX_SUBJECT_LENGTH - 1]
+                    = '\0';
+
+                book->subject_count++;
             }
-
-            strncat(record->subjects,
-                    subject_name,
-                    sizeof(record->subjects) -
-                    strlen(record->subjects) - 1);
         }
     }
 
