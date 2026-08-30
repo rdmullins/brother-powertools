@@ -40,7 +40,7 @@ void game_menu(void)
                 break;
 
             case 2:
-                system("trek");
+                system("$HOME/.local/bin/trek");
                 break;
 
             case 3:
@@ -48,7 +48,7 @@ void game_menu(void)
                 break;
 
             case 4:
-                system("~/.local/bin/oregon-local");
+                system("$HOME/.local/bin/oregon-local");
                 break;
 
             case 5:
