@@ -361,7 +361,8 @@ transfer.total_parts = parts;
 
             printf("\n");
             printf("+---------------------------------------------+\n");
-            printf("|          Wikipedia Transfer                 |\n");
+            printf("|              brother PowerTools             |\n");
+            printf("|              Wikipedia Transfer             |\n");
             printf("+---------------------------------------------+\n");
             printf("| Part %d of %d complete.                      |\n",
                    transfer.current_part,

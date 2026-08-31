@@ -12,7 +12,8 @@ void mail_menu(void)
         printf(
             "\n"
             "+---------------------------------------------+\n"
-            "|                 PowerTools Mail             |\n"
+            "|            brother PowerTools               |\n"
+            "|                   Email                     |\n"
             "+---------------------------------------------+\n"
             "|  1. Check Email                             |\n"
             "|  2. Compose Email                           |\n"

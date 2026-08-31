@@ -133,7 +133,8 @@ int send_transfer_part(const char *filename,
 {
     printf("\n");
     printf("+---------------------------------------------+\n");
-    printf("|              Transfer Part                 |\n");
+    printf("|              brother PowerTools             |\n");
+    printf("|                File Transfer                |\n"); 
     printf("+---------------------------------------------+\n");
     printf("| Part %d of %d                                |\n",
            part_number, total_parts);

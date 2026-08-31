@@ -11,7 +11,8 @@ void game_menu(void)
         printf(
             "\n"
             "+---------------------------------------------+\n"
-            "|                PowerTools Games             |\n"
+            "|              brother PowerTools             |\n"
+            "|                    Games                    |\n"
             "+---------------------------------------------+\n"
             "|  1. Adventure                               |\n"
             "|  2. Star Trek                               |\n"

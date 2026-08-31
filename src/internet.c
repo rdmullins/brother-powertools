@@ -11,10 +11,13 @@ void internet_menu(void)
         printf(
             "\n"
             "+---------------------------------------------+\n"
+            "|             brother PowerTools              |\n"
             "|                  Internet                   |\n"
             "+---------------------------------------------+\n"
             "|  1. Wikipedia                               |\n"
-            "|  2. Back                                    |\n"
+            "|  2. Private Heaven II BBS                   |\n"
+            "|  3. Level29 BBS                             |\n"
+            "|  4. Back                                    |\n"
             "+---------------------------------------------+\n"
             "\n"
             "Enter your choice: "
@@ -39,6 +42,14 @@ void internet_menu(void)
                 break;
 
             case 2:
+                system("nc bbs.sydbolton.ca 6502");
+                break;
+
+            case 3:
+                system("telnet bbs.fozztexx.com"); 
+                break;
+
+            case 4:
                 return;
 
             default:
