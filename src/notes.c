@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "notes.h"
 
@@ -79,8 +80,8 @@ int notes_load(const char *filename,
                        value);
 
         } else if (strcmp(key, "SOURCE") == 0) {
-            copy_field(current.source,
-                       sizeof(current.source),
+            copy_field(current.bib_id,
+                       sizeof(current.bib_id),
                        value);
 
         } else if (strcmp(key, "TITLE") == 0) {
@@ -120,4 +121,74 @@ int notes_load(const char *filename,
     fclose(file);
 
     return 1;
+}
+int notes_next_id(const char *filename,
+                  char *id,
+                  size_t id_size)
+{
+    FILE *fp;
+    char line[8192];
+    unsigned long highest = 0;
+
+    if (!filename || !id || id_size == 0)
+        return -1;
+
+    fp = fopen(filename, "r");
+
+    if (!fp) {
+        /* No database yet: first note is 000001. */
+        if (id_size < 7)
+            return -1;
+
+        snprintf(id, id_size, "%06lu", 1UL);
+        return 0;
+    }
+
+    while (fgets(line, sizeof(line), fp)) {
+        if (strncmp(line, "ID=", 3) == 0) {
+            unsigned long value = strtoul(line + 3, NULL, 10);
+
+            if (value > highest)
+                highest = value;
+        }
+    }
+
+    fclose(fp);
+
+    if (highest >= 999999)
+        return -1;
+
+    if (id_size < 7)
+        return -1;
+
+    snprintf(id, id_size, "%06lu", highest + 1);
+
+    return 0;
+}
+
+
+int notes_save(const char *filename,
+               const NoteRecord *record)
+{
+    FILE *fp;
+
+    if (!filename || !record)
+        return -1;
+
+    fp = fopen(filename, "a");
+
+    if (!fp)
+        return -1;
+
+    fprintf(fp, "ID=%s\n", record->id);
+    fprintf(fp, "SOURCE=%s\n", record->bib_id);
+    fprintf(fp, "TITLE=%s\n", record->title);
+    fprintf(fp, "LOCATOR=%s\n", record->locator);
+    fprintf(fp, "USE=%s\n", record->use);
+    fprintf(fp, "TEXT=%s\n", record->text);
+    fprintf(fp, "---\n");
+
+    fclose(fp);
+
+    return 0;
 }

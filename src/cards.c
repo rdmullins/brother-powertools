@@ -528,7 +528,7 @@ int card_build_note(const NoteRecord *record, Card *card)
         written = snprintf(source_line,
                            sizeof(source_line),
                            "Source %s",
-                           record->source);
+                           record->bib_id);
 
         if (written < 0 || written > CARD_WIDTH) {
             return -1;

@@ -2,6 +2,7 @@
 
 #include "library_menu.h"
 #include "catalog_menu.h"
+#include "notes.h"
 
 void library_menu(void)
 {
@@ -28,6 +29,13 @@ void library_menu(void)
             }
 
             choice = 0;
+        } else {
+            int character;
+
+            while ((character = getchar()) != '\n' &&
+                   character != EOF) {
+                /* discard trailing input */
+            }
         }
 
         switch (choice) {
@@ -40,7 +48,7 @@ void library_menu(void)
             break;
 
         case 3:
-            printf("\nResearch note functionality coming soon.\n");
+            notes_menu();
             break;
 
         case 4:

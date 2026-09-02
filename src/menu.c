@@ -78,7 +78,7 @@ int main (void)
             "|             brother PowerTools              |\n"
             "|                  Main Menu                  |\n"
             "+---------------------------------------------+\n"
-            "|     1. File Transfer     5. Emailry         |\n"
+            "|     1. File Transfer     5. Email           |\n"
             "|     2. Internet          6. Library         |\n"
             "|     3. Games             7. System          |\n"
             "|     4. BASIC                                |\n"

@@ -1,8 +1,9 @@
+#include <stddef.h>
+
 #ifndef NOTES_H
 #define NOTES_H
 
 #define NOTE_MAX_ID 32
-#define NOTE_MAX_SOURCE 32
 #define NOTE_MAX_TITLE 256
 #define NOTE_MAX_LOCATOR 128
 #define NOTE_MAX_USE 512
@@ -10,7 +11,7 @@
 
 typedef struct {
     char id[NOTE_MAX_ID];
-    char source[NOTE_MAX_SOURCE];
+    char bib_id[NOTE_MAX_ID];
     char title[NOTE_MAX_TITLE];
     char locator[NOTE_MAX_LOCATOR];
     char use[NOTE_MAX_USE];
@@ -20,5 +21,14 @@ typedef struct {
 int notes_load(const char *filename,
                const char *wanted_id,
                NoteRecord *record);
+
+int notes_next_id(const char *filename,
+                  char *id,
+                  size_t id_size);
+
+int notes_save(const char *filename,
+               const NoteRecord *record);
+
+void notes_menu(void);
 
 #endif
