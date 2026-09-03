@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 #ifndef BIBLIOGRAPHY_H
 #define BIBLIOGRAPHY_H
 
@@ -46,5 +48,14 @@ typedef struct {
 int bibliography_load(const char *filename,
                       const char *wanted_id,
                       BibliographyRecord *record);
+
+int bibliography_search(const char *filename,
+                        const char *query,
+                        BibliographyRecord *results,
+                        size_t max_results);
+
+void bibliography_display(const BibliographyRecord *record);
+
+void bibliography_menu(void);
 
 #endif

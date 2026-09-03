@@ -3,6 +3,7 @@
 #include "library_menu.h"
 #include "catalog_menu.h"
 #include "notes.h"
+#include "bibliography.h"
 
 void library_menu(void)
 {
@@ -44,7 +45,7 @@ void library_menu(void)
             break;
 
         case 2:
-            printf("\nBibliography functionality coming soon.\n");
+            bibliography_menu();
             break;
 
         case 3:

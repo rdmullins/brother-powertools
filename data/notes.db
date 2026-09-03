@@ -11,4 +11,17 @@ TITLE=Origins of Civil Defense
 LOCATOR=§3
 USE=
 TEXT=Twentieth-century civil defense efforts can be traced to the first world war, when Congress authorized the creation of a Council of National Defense to advise the executive branch as to the optimal placement of troops and supplies within the United States in the event of an attack.
+---ID=000001
+SOURCE=BC000001
+TITLE=Demonstrations Fall Off
+LOCATOR=p. 23
+USE=Chapter 4
+TEXT=The number of people actively participating in anti-nuclear protests had fallen off precipitously by 1965.
+---
+ID=NC000052
+BIB_ID=BC000001
+TITLE=Fallout Shelter Sales
+LOCATOR=p. 43
+USE=Chapter 6
+TEXT=Fallout shelter sales dropped dramatically following the resolution of the Cuban Missile Crisis.
 ---

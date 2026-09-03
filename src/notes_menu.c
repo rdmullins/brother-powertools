@@ -3,7 +3,7 @@
 
 #include "notes.h"
 
-#define NOTES_DB "notes.db"
+#define NOTES_DB "data/notes.db"
 
 static void read_line(const char *prompt, char *buffer, size_t size)
 {
@@ -16,7 +16,7 @@ static void read_line(const char *prompt, char *buffer, size_t size)
     }
 }
 
-static void add_note(void)
+int notes_add_for_bibliography(const char *bib_id)
 {
     NoteRecord record;
 
@@ -24,7 +24,7 @@ static void add_note(void)
 
     if (notes_next_id(NOTES_DB, record.id, sizeof(record.id)) != 0) {
         printf("\nUnable to determine the next note ID.\n");
-        return;
+        return -1;
     }
 
     printf("\nADD RESEARCH NOTE\n");
@@ -32,7 +32,13 @@ static void add_note(void)
 
     printf("Note ID: %s\n\n", record.id);
 
-    read_line("Bib ID:  ", record.bib_id, sizeof(record.bib_id));
+    if (bib_id == NULL || bib_id[0] == '\0') {
+        printf("\nInvalid bibliography ID.\n");
+        return -1;
+    }
+
+    strncpy(record.bib_id, bib_id, sizeof(record.bib_id) - 1);
+    record.bib_id[sizeof(record.bib_id) - 1] = '\0';
     read_line("Title:   ", record.title, sizeof(record.title));
     read_line("Locator: ", record.locator, sizeof(record.locator));
     read_line("Use:     ", record.use, sizeof(record.use));
@@ -46,20 +52,21 @@ static void add_note(void)
         char answer[8];
 
         if (!fgets(answer, sizeof(answer), stdin))
-            return;
+            return -1;
 
         if (answer[0] != 'y' && answer[0] != 'Y') {
             printf("Note not saved.\n");
-            return;
+            return -1;
         }
     }
 
     if (notes_save(NOTES_DB, &record) != 0) {
         printf("Unable to save note.\n");
-        return;
+        return -1;
     }
 
     printf("Note %s saved.\n", record.id);
+    return 0;
 }
 
 static void find_note(void)
@@ -108,7 +115,8 @@ void notes_menu(void)
 
         switch (choice[0]) {
         case '1':
-            add_note();
+            printf("\nAdd Note from a bibliography record.\n");
+            printf("Please select a bibliography record first.\n");
             break;
 
         case '2':

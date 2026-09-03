@@ -29,6 +29,8 @@ int notes_next_id(const char *filename,
 int notes_save(const char *filename,
                const NoteRecord *record);
 
+int notes_add_for_bibliography(const char *bib_id);
+
 void notes_menu(void);
 
 #endif
