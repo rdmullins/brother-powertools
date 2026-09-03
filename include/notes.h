@@ -37,5 +37,6 @@ int notes_search_by_bibliography(const char *filename,
                                  const char *bib_id,
                                  NoteRecord *results,
                                  size_t max_results);
+                                 
 
 #endif

@@ -4,6 +4,8 @@
 
 #include "notes.h"
 #include "bibliography.h"
+#include "cards.h"
+#include "card_set.h"
 
 #define BIB_DB "data/bibliography.db"
 #define BIB_MAX_RESULTS 50
@@ -104,6 +106,58 @@ static void view_notes(const char *bib_id)
         printf("\n");
         printf("Note:\n");
         printf("%s\n", record->text);
+
+        
+    }
+
+    
+}
+
+static void print_note_cards(const char *bib_id)
+{
+    NoteRecord notes[NOTE_MAX_RESULTS];
+    CardSet set;
+    int count;
+
+    count = notes_search_by_bibliography(NOTES_DB,
+                                         bib_id,
+                                         notes,
+                                         NOTE_MAX_RESULTS);
+
+    if (count < 0) {
+        printf("\nUnable to load research notes.\n");
+        return;
+    }
+
+    if (count == 0) {
+        printf("\nNo notes found for this source.\n");
+        return;
+    }
+
+    card_set_init(&set);
+
+    for (int i = 0; i < count; i++) {
+        Card card;
+
+        if (card_build_note(&notes[i], &card) != 0) {
+            printf("\nUnable to build card for %s.\n",
+                   notes[i].id);
+            return;
+        }
+
+        if (card_set_add(&set, &card) != 0) {
+            printf("\nUnable to add card for %s.\n",
+                   notes[i].id);
+            return;
+        }
+    }
+
+    for (int i = 0; i < set.count; i++) {
+        card_print(&set.cards[i]);
+
+        if (i < set.count - 1) {
+            printf("\f");
+        }
     }
 }
 
@@ -174,7 +228,8 @@ static void bibliography_search_menu(void)
         printf("\n");
         printf("1. Add Note\n");
         printf("2. View Notes\n");
-        printf("3. Back\n");
+        printf("3. Print Note Cards\n");
+        printf("4. Back\n");
         printf("\nChoice: ");
 
         read_line("", selection, sizeof(selection));
@@ -193,6 +248,10 @@ static void bibliography_search_menu(void)
         break;
 
     case '3':
+        print_note_cards(record->id);
+        break;
+
+    case '4':
         return;
 
     default:
