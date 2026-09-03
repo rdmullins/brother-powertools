@@ -7,6 +7,8 @@
 
 #define BIB_DB "data/bibliography.db"
 #define BIB_MAX_RESULTS 50
+#define NOTES_DB "data/notes.db"
+#define NOTE_MAX_RESULTS 50
 
 static void read_line(const char *prompt,
                       char *buffer,
@@ -27,6 +29,82 @@ static void display_search_result(const BibliographyRecord *record,
     printf("\n%d. %s\n", number, record->id);
     printf("   %s\n", record->author);
     printf("   %s\n", record->title);
+}
+
+static void view_notes(const char *bib_id)
+{
+    NoteRecord results[NOTE_MAX_RESULTS];
+    char selection[32];
+    char *end;
+    long choice;
+    int count;
+
+    count = notes_search_by_bibliography(NOTES_DB,
+                                         bib_id,
+                                         results,
+                                         NOTE_MAX_RESULTS);
+
+    if (count < 0) {
+        printf("\nUnable to search research notes.\n");
+        return;
+    }
+
+    printf("\nRESEARCH NOTES\n");
+    printf("--------------\n");
+
+    if (count == 0) {
+        printf("\nNo notes found for this source.\n");
+        return;
+    }
+
+    for (int i = 0; i < count; i++) {
+        printf("\n%d. %s", i + 1, results[i].id);
+
+        if (results[i].title[0] != '\0') {
+            printf(" - %s", results[i].title);
+        }
+
+        if (results[i].locator[0] != '\0') {
+            printf(" (%s)", results[i].locator);
+        }
+
+        printf("\n");
+    }
+
+    printf("\nSelect note (1-%d, or 0 to cancel): ", count);
+
+    if (fgets(selection, sizeof(selection), stdin) == NULL) {
+        return;
+    }
+
+    choice = strtol(selection, &end, 10);
+
+    if (end == selection ||
+        choice < 0 ||
+        choice > count) {
+        printf("\nInvalid selection.\n");
+        return;
+    }
+
+    if (choice == 0) {
+        return;
+    }
+
+    {
+        NoteRecord *record = &results[choice - 1];
+
+        printf("\n");
+        printf("RESEARCH NOTE\n");
+        printf("-------------\n");
+        printf("ID:      %s\n", record->id);
+        printf("Source:  %s\n", record->bib_id);
+        printf("Title:   %s\n", record->title);
+        printf("Locator: %s\n", record->locator);
+        printf("Use:     %s\n", record->use);
+        printf("\n");
+        printf("Note:\n");
+        printf("%s\n", record->text);
+    }
 }
 
 static void bibliography_search_menu(void)
@@ -111,7 +189,7 @@ static void bibliography_search_menu(void)
         break;
 
     case '2':
-        printf("\nView Notes: coming soon.\n");
+        view_notes(record->id);
         break;
 
     case '3':

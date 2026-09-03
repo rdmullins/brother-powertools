@@ -33,4 +33,9 @@ int notes_add_for_bibliography(const char *bib_id);
 
 void notes_menu(void);
 
+int notes_search_by_bibliography(const char *filename,
+                                 const char *bib_id,
+                                 NoteRecord *results,
+                                 size_t max_results);
+
 #endif

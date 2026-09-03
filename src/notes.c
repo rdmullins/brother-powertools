@@ -122,6 +122,116 @@ int notes_load(const char *filename,
 
     return 1;
 }
+
+int notes_search_by_bibliography(const char *filename,
+                                 const char *bib_id,
+                                 NoteRecord *results,
+                                 size_t max_results)
+{
+    FILE *file;
+    char line[8192];
+    NoteRecord current;
+    int in_record = 0;
+    int count = 0;
+
+    if (filename == NULL ||
+        bib_id == NULL ||
+        results == NULL ||
+        max_results == 0) {
+        return -1;
+    }
+
+    file = fopen(filename, "r");
+
+    if (file == NULL) {
+        return -1;
+    }
+
+    memset(&current, 0, sizeof(current));
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+        char *equals;
+        char *key;
+        char *value;
+
+        line[strcspn(line, "\r\n")] = '\0';
+
+        if (strcmp(line, "---") == 0) {
+            if (in_record &&
+                strcmp(current.bib_id, bib_id) == 0 &&
+                (size_t)count < max_results) {
+
+                results[count] = current;
+                count++;
+            }
+
+            memset(&current, 0, sizeof(current));
+            in_record = 0;
+            continue;
+        }
+
+        equals = strchr(line, '=');
+
+        if (equals == NULL) {
+            continue;
+        }
+
+        *equals = '\0';
+
+        key = line;
+        value = equals + 1;
+
+        in_record = 1;
+
+        if (strcmp(key, "ID") == 0) {
+            copy_field(current.id,
+                       sizeof(current.id),
+                       value);
+
+        } else if (strcmp(key, "BIB_ID") == 0) {
+            copy_field(current.bib_id,
+                       sizeof(current.bib_id),
+                       value);
+
+        } else if (strcmp(key, "TITLE") == 0) {
+            copy_field(current.title,
+                       sizeof(current.title),
+                       value);
+
+        } else if (strcmp(key, "LOCATOR") == 0) {
+            copy_field(current.locator,
+                       sizeof(current.locator),
+                       value);
+
+        } else if (strcmp(key, "USE") == 0) {
+            copy_field(current.use,
+                       sizeof(current.use),
+                       value);
+
+        } else if (strcmp(key, "TEXT") == 0) {
+            copy_field(current.text,
+                       sizeof(current.text),
+                       value);
+        }
+    }
+
+    /*
+     * Handle a final record even if the file does not end
+     * with a --- separator.
+     */
+    if (in_record &&
+        strcmp(current.bib_id, bib_id) == 0 &&
+        (size_t)count < max_results) {
+
+        results[count] = current;
+        count++;
+    }
+
+    fclose(file);
+
+    return count;
+}
+
 int notes_next_id(const char *filename,
                   char *id,
                   size_t id_size)
