@@ -56,8 +56,36 @@ int citation_generate(const BibliographyRecord *record,
     }
 
     /*
+     * Automatic formatter: report.
+     */
+    if (strcmp(record->type, "REPORT") == 0) {
+        int written;
+
+        written = snprintf(
+            output,
+            output_size,
+            "%s. %s. %s. %s, %s, %s.",
+            record->author,
+            record->title,
+            record->report_number,
+            record->institution,
+            record->division,
+            record->date
+        );
+
+        if (written < 0 ||
+            (size_t)written >= output_size) {
+            output[0] = '\0';
+            return -1;
+        }
+
+        return 0;
+    }
+
+    /*
      * We don't know how to automatically cite this
      * source type yet.
      */
     return 1;
+
 }

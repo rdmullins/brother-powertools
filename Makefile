@@ -7,7 +7,7 @@ SOURCES = $(wildcard src/*.c)
 all:
 	$(CC) $(CFLAGS) $(SOURCES) -o powertools $(LDLIBS)
 
-test: test-card-set test-catalog test-catalog-search test-openlibrary test-catalog-cards
+test: test-card-set test-catalog test-catalog-search test-openlibrary test-catalog-cards test-citation
 	@echo "All tests passed."
 
 test-card-set:
@@ -29,3 +29,7 @@ test-catalog-search:
 test-catalog-cards:
 	$(CC) $(CFLAGS) tests/test_catalog_cards.c src/cards.c src/card_set.c src/citation.c src/notes.c -o /tmp/test_catalog_cards $(LDLIBS)
 	/tmp/test_catalog_cards
+
+test-citation:
+	$(CC) $(CFLAGS) tests/test_citation.c src/citation.c -o /tmp/test_citation $(LDLIBS)
+	/tmp/test_citation
