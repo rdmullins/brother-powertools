@@ -113,43 +113,23 @@ static void view_notes(const char *bib_id)
     
 }
 
-static void print_note_cards(const char *bib_id)
+static void print_note_cards(const BibliographyRecord *record)
 {
-    NoteRecord notes[NOTE_MAX_RESULTS];
     CardSet set;
-    int count;
 
-    count = notes_search_by_bibliography(NOTES_DB,
-                                         bib_id,
-                                         notes,
-                                         NOTE_MAX_RESULTS);
-
-    if (count < 0) {
-        printf("\nUnable to load research notes.\n");
+    if (record == NULL) {
+        printf("\nUnable to print note cards.\n");
         return;
     }
 
-    if (count == 0) {
-        printf("\nNo notes found for this source.\n");
+    if (cards_build_source_set(record, &set) != 0) {
+        printf("\nUnable to build source card set.\n");
         return;
     }
 
-    card_set_init(&set);
-
-    for (int i = 0; i < count; i++) {
-        Card card;
-
-        if (card_build_note(&notes[i], &card) != 0) {
-            printf("\nUnable to build card for %s.\n",
-                   notes[i].id);
-            return;
-        }
-
-        if (card_set_add(&set, &card) != 0) {
-            printf("\nUnable to add card for %s.\n",
-                   notes[i].id);
-            return;
-        }
+    if (set.count == 0) {
+        printf("\nNo cards found for this source.\n");
+        return;
     }
 
     for (int i = 0; i < set.count; i++) {
@@ -228,8 +208,9 @@ static void bibliography_search_menu(void)
         printf("\n");
         printf("1. Add Note\n");
         printf("2. View Notes\n");
-        printf("3. Print Note Cards\n");
-        printf("4. Back\n");
+        printf("3. Print Bibliography Card\n");
+        printf("4. Print Note Cards\n");
+        printf("5. Back\n");
         printf("\nChoice: ");
 
         read_line("", selection, sizeof(selection));
@@ -248,10 +229,16 @@ static void bibliography_search_menu(void)
         break;
 
     case '3':
-        print_note_cards(record->id);
+        if (cards_print_bibliography(record) != 0) {
+            printf("\nUnable to print bibliography card.\n");
+        }
         break;
 
     case '4':
+        print_note_cards(record);
+        break;
+
+    case '5':
         return;
 
     default:

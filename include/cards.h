@@ -25,6 +25,10 @@ int card_add_wrapped_text(Card *card, const char *text);
 int card_add_hanging_text(Card *card,
                           const char *text,
                           int indent);
+int card_build_bibliography(const BibliographyRecord *record,
+                            Card *card);
+int cards_build_source_set(const BibliographyRecord *record,
+                           CardSet *set);                                                      
 int cards_print_bibliography(const BibliographyRecord *record);        
 int cards_print_note(const NoteRecord *record);           
 int cards_write_note(const NoteRecord *record,

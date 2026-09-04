@@ -11,7 +11,7 @@ test: test-card-set test-catalog test-catalog-search test-openlibrary test-catal
 	@echo "All tests passed."
 
 test-card-set:
-	$(CC) $(CFLAGS) tests/test_card_set.c src/cards.c src/card_set.c src/citation.c src/notes.c -o /tmp/test_card_set $(LDLIBS)
+	gcc $(CFLAGS) tests/test_card_set.c src/cards.c src/card_set.c src/citation.c src/notes.c src/bibliography.c -o /tmp/test_card_set $(LDLIBS)
 	/tmp/test_card_set
 
 test-openlibrary:

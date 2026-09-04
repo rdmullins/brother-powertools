@@ -421,12 +421,12 @@ void cards_print_catalog(const CatalogRecord *record)
     }
 }
 
-int cards_print_bibliography(const BibliographyRecord *record)
+int card_build_bibliography(const BibliographyRecord *record,
+                            Card *card)
 {
-    Card card;
     char citation[CITATION_MAX_LENGTH];
 
-    if (record == NULL) {
+    if (record == NULL || card == NULL) {
         return -1;
     }
 
@@ -436,11 +436,83 @@ int cards_print_bibliography(const BibliographyRecord *record)
         return -1;
     }
 
-    card_init(&card);
+    card_init(card);
 
-    if (card_add_hanging_text(&card,
+    /*
+     * The bibliography ID identifies the physical card.
+     * It is deliberately separate from the Chicago citation.
+     */
+    if (card_add_line(card, record->id) != 0) {
+        return -1;
+    }
+
+    if (card_add_line(card, "") != 0) {
+        return -1;
+    }
+
+    if (card_add_hanging_text(card,
                               citation,
                               4) != 0) {
+        return -1;
+    }
+
+    return 0;
+}
+
+int cards_build_source_set(const BibliographyRecord *record,
+                           CardSet *set)
+{
+    NoteRecord notes[50];
+    Card card;
+    int note_count;
+
+    if (record == NULL || set == NULL) {
+        return -1;
+    }
+
+    card_set_init(set);
+
+    /*
+     * Bibliography card always comes first.
+     */
+    if (card_build_bibliography(record, &card) != 0) {
+        return -1;
+    }
+
+    if (card_set_add(set, &card) != 0) {
+        return -1;
+    }
+
+    /*
+     * Add all research notes belonging to this source.
+     */
+    note_count = notes_search_by_bibliography("data/notes.db",
+                                               record->id,
+                                               notes,
+                                               50);
+
+    if (note_count < 0) {
+        return -1;
+    }
+
+    for (int i = 0; i < note_count; i++) {
+        if (card_build_note(&notes[i], &card) != 0) {
+            return -1;
+        }
+
+        if (card_set_add(set, &card) != 0) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int cards_print_bibliography(const BibliographyRecord *record)
+{
+    Card card;
+
+    if (card_build_bibliography(record, &card) != 0) {
         return -1;
     }
 
