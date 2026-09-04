@@ -117,10 +117,6 @@ int main (void)
                 library_menu();
                 break;
             case 7:
-                printf("You selected System\n");
-                //system_menu();
-                break;
-            case 8:
                 printf("Exiting...\n");
                 return;
             default:

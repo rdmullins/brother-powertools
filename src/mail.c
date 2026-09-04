@@ -36,7 +36,16 @@ void mail_menu(void)
 
         switch (choice) {
             case 1:
-                system("/usr/bin/mh/inc");
+                system(
+                    "/usr/bin/mh/inc "
+                    "-host pop.gmail.com "
+                    "-user rogermullins.writer@gmail.com "
+                    "-port pop3s "
+                    "-initialtls "
+                    "-sasl "
+                    "-saslmech xoauth2 "
+                    "-authservice gmail"
+                );
                 mail_browser();
                 break;
 
