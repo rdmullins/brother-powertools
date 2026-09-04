@@ -92,21 +92,21 @@ if (strcmp(set.cards[0].lines[0],
      */
 
     if (strcmp(set.cards[2].lines[0],
-               "Oregon Trail") != 0) {
+               "OREGON TRAIL") != 0) {
         fprintf(stderr,
                 "First subject card is incorrect.\n");
         return 1;
     }
 
     if (strcmp(set.cards[3].lines[0],
-               "Western Migration") != 0) {
+               "WESTERN MIGRATION") != 0) {
         fprintf(stderr,
                 "Second subject card is incorrect.\n");
         return 1;
     }
 
     if (strcmp(set.cards[4].lines[0],
-               "Women") != 0) {
+               "WOMEN") != 0) {
         fprintf(stderr,
                 "Third subject card is incorrect.\n");
         return 1;

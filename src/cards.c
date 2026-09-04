@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "cards.h"
 #include "citation.h"
@@ -436,14 +437,24 @@ static int build_subject_cards(const CatalogRecord *record,
 
     while (subject != NULL) {
         Card card;
+        char heading[CARD_WIDTH + 1];
+        size_t i;
 
         card_init(&card);
 
         /*
          * Traditional catalog cards use the subject heading
-         * as the filing/access point.
+         * as the filing/access point. Subject headings are
+         * conventionally displayed in uppercase.
          */
-        if (card_add_wrapped_text(&card, subject) != 0) {
+        strncpy(heading, subject, sizeof(heading) - 1);
+        heading[sizeof(heading) - 1] = '\0';
+
+        for (i = 0; heading[i] != '\0'; i++) {
+            heading[i] = (char)toupper((unsigned char)heading[i]);
+        }
+
+        if (card_add_wrapped_text(&card, heading) != 0) {
             return -1;
         }
 
