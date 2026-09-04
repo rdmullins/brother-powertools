@@ -6,6 +6,7 @@
 #include "bibliography.h"
 #include "cards.h"
 #include "card_set.h"
+#include "transfer.h"
 
 #define BIB_DB "data/bibliography.db"
 #define BIB_MAX_RESULTS 50
@@ -116,6 +117,7 @@ static void view_notes(const char *bib_id)
 static void print_note_cards(const BibliographyRecord *record)
 {
     CardSet set;
+    char filename[256];
 
     if (record == NULL) {
         printf("\nUnable to print note cards.\n");
@@ -132,13 +134,27 @@ static void print_note_cards(const BibliographyRecord *record)
         return;
     }
 
-    for (int i = 0; i < set.count; i++) {
-        card_print(&set.cards[i]);
+    snprintf(filename,
+             sizeof(filename),
+             "/tmp/%s-card-set.wpt",
+             record->id);
 
-        if (i < set.count - 1) {
-            printf("\f");
-        }
+    if (card_set_write(&set, filename) != 0) {
+        printf("\nUnable to create card set file.\n");
+        return;
     }
+
+    printf("\n");
+    printf("Prepared %d cards for %s.\n",
+           set.count,
+           record->id);
+
+    if (send_ascii_file(filename) != 0) {
+        printf("\nUnable to transfer card set to the Brother.\n");
+        return;
+    }
+
+    printf("\nCard set transferred successfully.\n");
 }
 
 static void bibliography_search_menu(void)
