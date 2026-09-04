@@ -273,6 +273,121 @@ void card_print(const Card *card)
     card_print_file(card, stdout);
 }
 
+static int add_publication_line(const CatalogRecord *record,
+                                Card *card)
+{
+    char publication[CARD_WIDTH + 1];
+
+    if (record == NULL || card == NULL) {
+        return -1;
+    }
+
+    /*
+     * Build the publication statement from the fields we have.
+     *
+     * Prefer:
+     *     Place : Publisher, Year.
+     *
+     * Omit missing fields gracefully.
+     */
+
+    if (record->place[0] != '\0' &&
+        record->publisher[0] != '\0' &&
+        record->year[0] != '\0') {
+
+        if (snprintf(publication,
+                     sizeof(publication),
+                     "%s : %s, %s.",
+                     record->place,
+                     record->publisher,
+                     record->year) >= (int)sizeof(publication)) {
+            return -1;
+        }
+
+    } else if (record->publisher[0] != '\0' &&
+               record->year[0] != '\0') {
+
+        if (snprintf(publication,
+                     sizeof(publication),
+                     "%s, %s.",
+                     record->publisher,
+                     record->year) >= (int)sizeof(publication)) {
+            return -1;
+        }
+
+    } else if (record->place[0] != '\0' &&
+               record->year[0] != '\0') {
+
+        if (snprintf(publication,
+                     sizeof(publication),
+                     "%s, %s.",
+                     record->place,
+                     record->year) >= (int)sizeof(publication)) {
+            return -1;
+        }
+
+    } else if (record->year[0] != '\0') {
+
+        if (snprintf(publication,
+                     sizeof(publication),
+                     "%s.",
+                     record->year) >= (int)sizeof(publication)) {
+            return -1;
+        }
+
+    } else if (record->publisher[0] != '\0') {
+
+        if (snprintf(publication,
+                     sizeof(publication),
+                     "%s.",
+                     record->publisher) >= (int)sizeof(publication)) {
+            return -1;
+        }
+
+    } else if (record->place[0] != '\0') {
+
+        if (snprintf(publication,
+                     sizeof(publication),
+                     "%s.",
+                     record->place) >= (int)sizeof(publication)) {
+            return -1;
+        }
+
+    } else {
+        return 0;
+    }
+
+    return card_add_wrapped_text(card, publication);
+}
+
+static int build_title_card(const CatalogRecord *record,
+                            Card *card)
+{
+    if (record == NULL || card == NULL) {
+        return -1;
+    }
+
+    card_init(card);
+
+    if (card_add_wrapped_text(card, record->title) != 0) {
+        return -1;
+    }
+
+    if (card_add_line(card, "") != 0) {
+        return -1;
+    }
+
+    if (card_add_line(card, record->author) != 0) {
+        return -1;
+    }
+
+    if (add_publication_line(record, card) != 0) {
+        return -1;
+    }
+
+    return 0;
+}
+
 static int build_author_card(const CatalogRecord *record,
                              Card *card)
 {
@@ -294,27 +409,7 @@ static int build_author_card(const CatalogRecord *record,
         return -1;
     }
 
-    return 0;
-}
-
-static int build_title_card(const CatalogRecord *record,
-                            Card *card)
-{
-    if (record == NULL || card == NULL) {
-        return -1;
-    }
-
-    card_init(card);
-
-    if (card_add_wrapped_text(card, record->title) != 0) {
-        return -1;
-    }
-
-    if (card_add_line(card, "") != 0) {
-        return -1;
-    }
-
-    if (card_add_line(card, record->author) != 0) {
+    if (add_publication_line(record, card) != 0) {
         return -1;
     }
 
@@ -344,7 +439,11 @@ static int build_subject_cards(const CatalogRecord *record,
 
         card_init(&card);
 
-        if (card_add_line(&card, subject) != 0) {
+        /*
+         * Traditional catalog cards use the subject heading
+         * as the filing/access point.
+         */
+        if (card_add_wrapped_text(&card, subject) != 0) {
             return -1;
         }
 
@@ -356,7 +455,11 @@ static int build_subject_cards(const CatalogRecord *record,
             return -1;
         }
 
-        if (card_add_line(&card, record->title) != 0) {
+        if (card_add_wrapped_text(&card, record->title) != 0) {
+            return -1;
+        }
+
+        if (add_publication_line(record, &card) != 0) {
             return -1;
         }
 
@@ -381,7 +484,12 @@ int cards_build_catalog(const CatalogRecord *record,
 
     card_set_init(set);
 
-    if (build_author_card(record, &card) != 0) {
+    /*
+     * Traditional card catalog order:
+     * title card, author card, then subject cards.
+     */
+
+    if (build_title_card(record, &card) != 0) {
         return -1;
     }
 
@@ -389,7 +497,7 @@ int cards_build_catalog(const CatalogRecord *record,
         return -1;
     }
 
-    if (build_title_card(record, &card) != 0) {
+    if (build_author_card(record, &card) != 0) {
         return -1;
     }
 

@@ -13,6 +13,9 @@ int main(void)
 
     strcpy(record.author, "Faragher, John Mack");
     strcpy(record.title, "Women and Men on the Overland Trail");
+    strcpy(record.place, "New Haven");
+    strcpy(record.publisher, "Yale University Press");
+    strcpy(record.year, "2001");
     strcpy(record.subjects,
            "Oregon Trail;Western Migration;Women");
 
@@ -29,19 +32,64 @@ int main(void)
         return 1;
     }
 
-    if (strcmp(set.cards[0].lines[0],
+    /*
+     * Title card.
+     */
+
+if (strcmp(set.cards[0].lines[0],
+           "Women and Men on the Overland Trail") != 0) {
+    fprintf(stderr,
+            "Title card heading is incorrect.\n");
+    fprintf(stderr,
+            "Got:     [%s]\n",
+            set.cards[0].lines[0]);
+    fprintf(stderr,
+            "Expected:[Women and Men on the Overland Trail]\n");
+    return 1;
+}
+
+    if (strcmp(set.cards[0].lines[2],
                "Faragher, John Mack") != 0) {
         fprintf(stderr,
-                "Author card is incorrect.\n");
+                "Title card author is incorrect.\n");
         return 1;
     }
 
-    if (strcmp(set.cards[1].lines[0],
-               "Women and Men on the Overland Trail") != 0) {
+    if (strcmp(set.cards[0].lines[3],
+               "New Haven : Yale University Press, 2001.") != 0) {
         fprintf(stderr,
-                "Title card is incorrect.\n");
+                "Title card publication line is incorrect.\n");
         return 1;
     }
+
+    /*
+     * Author card.
+     */
+
+    if (strcmp(set.cards[1].lines[0],
+               "Faragher, John Mack") != 0) {
+        fprintf(stderr,
+                "Author card heading is incorrect.\n");
+        return 1;
+    }
+
+    if (strcmp(set.cards[1].lines[2],
+               "Women and Men on the Overland Trail") != 0) {
+        fprintf(stderr,
+                "Author card title is incorrect.\n");
+        return 1;
+    }
+
+    if (strcmp(set.cards[1].lines[3],
+               "New Haven : Yale University Press, 2001.") != 0) {
+        fprintf(stderr,
+                "Author card publication line is incorrect.\n");
+        return 1;
+    }
+
+    /*
+     * Subject cards.
+     */
 
     if (strcmp(set.cards[2].lines[0],
                "Oregon Trail") != 0) {
@@ -61,6 +109,36 @@ int main(void)
                "Women") != 0) {
         fprintf(stderr,
                 "Third subject card is incorrect.\n");
+        return 1;
+    }
+
+    /*
+     * Verify subject-card bibliographic information.
+     */
+
+    if (strcmp(set.cards[2].lines[2],
+               "Faragher, John Mack") != 0) {
+        fprintf(stderr,
+                "Subject card author is incorrect.\n");
+        return 1;
+    }
+
+if (strcmp(set.cards[0].lines[0],
+           "Women and Men on the Overland Trail") != 0) {
+    fprintf(stderr,
+            "Title card heading is incorrect.\n");
+    fprintf(stderr,
+            "Got:     [%s]\n",
+            set.cards[0].lines[0]);
+    fprintf(stderr,
+            "Expected:[Women and Men on the Overland Trail]\n");
+    return 1;
+}
+
+    if (strcmp(set.cards[2].lines[4],
+               "New Haven : Yale University Press, 2001.") != 0) {
+        fprintf(stderr,
+                "Subject card publication line is incorrect.\n");
         return 1;
     }
 
