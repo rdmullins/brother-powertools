@@ -4,6 +4,7 @@
 #define BIBLIOGRAPHY_H
 
 #define BIB_MAX_ID 32
+#define BIB_MAX_CATALOG_ID 32
 #define BIB_MAX_TYPE 32
 #define BIB_MAX_AUTHOR 256
 #define BIB_MAX_TITLE 512
@@ -23,6 +24,7 @@
 
 typedef struct {
     char id[BIB_MAX_ID];
+    char catalog_id[BIB_MAX_CATALOG_ID];
     char type[BIB_MAX_TYPE];
 
     char author[BIB_MAX_AUTHOR];
@@ -57,5 +59,17 @@ int bibliography_search(const char *filename,
 void bibliography_display(const BibliographyRecord *record);
 
 void bibliography_menu(void);
+
+int bibliography_save(const char *filename,
+                      const BibliographyRecord *record);
+
+int bibliography_next_id(const char *filename,
+                         char *id,
+                         size_t id_size);
+
+int bibliography_exists_for_catalog(const char *filename,
+                                    const char *catalog_id);
+
+void bibliography_add_from_catalog(void);
 
 #endif

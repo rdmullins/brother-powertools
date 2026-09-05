@@ -94,6 +94,11 @@ int bibliography_load(const char *filename,
                        sizeof(current.title),
                        value);
 
+        } else if (strcmp(key, "CATALOG_ID") == 0) {
+            copy_field(current.catalog_id,
+                    sizeof(current.catalog_id),
+                    value);
+
         } else if (strcmp(key, "JOURNAL") == 0) {
             copy_field(current.journal,
                        sizeof(current.journal),
@@ -286,6 +291,10 @@ int bibliography_search(const char *filename,
             copy_field(current.title, sizeof(current.title), value);
         } else if (strcmp(key, "JOURNAL") == 0) {
             copy_field(current.journal, sizeof(current.journal), value);
+            } else if (strcmp(key, "CATALOG_ID") == 0) {
+    copy_field(current.catalog_id,
+               sizeof(current.catalog_id),
+               value);
         } else if (strcmp(key, "PLACE") == 0) {
             copy_field(current.place, sizeof(current.place), value);
         } else if (strcmp(key, "PUBLISHER") == 0) {
@@ -391,4 +400,162 @@ void bibliography_display(const BibliographyRecord *record)
     if (record->citation[0] != '\0') {
         printf("Citation:    %s\n", record->citation);
     }
+}
+
+int bibliography_save(const char *filename,
+                      const BibliographyRecord *record)
+{
+    FILE *file;
+
+    if (filename == NULL || record == NULL) {
+        return -1;
+    }
+
+    file = fopen(filename, "a");
+
+    if (file == NULL) {
+        perror("Unable to open bibliography");
+        return -1;
+    }
+
+    fprintf(file, "ID=%s\n", record->id);
+    fprintf(file, "CATALOG_ID=%s\n", record->catalog_id);
+    fprintf(file, "TYPE=%s\n", record->type);
+    fprintf(file, "AUTHOR=%s\n", record->author);
+    fprintf(file, "TITLE=%s\n", record->title);
+    fprintf(file, "JOURNAL=%s\n", record->journal);
+    fprintf(file, "PLACE=%s\n", record->place);
+    fprintf(file, "PUBLISHER=%s\n", record->publisher);
+    fprintf(file, "INSTITUTION=%s\n", record->institution);
+    fprintf(file, "REPORT_NUMBER=%s\n", record->report_number);
+    fprintf(file, "DIVISION=%s\n", record->division);
+    fprintf(file, "VOLUME=%s\n", record->volume);
+    fprintf(file, "ISSUE=%s\n", record->issue);
+    fprintf(file, "DATE=%s\n", record->date);
+    fprintf(file, "PAGES=%s\n", record->pages);
+    fprintf(file, "SOURCE=%s\n", record->source);
+    fprintf(file, "LOCATION=%s\n", record->location);
+    fprintf(file, "CITATION=%s\n", record->citation);
+    fprintf(file, "---\n");
+
+    fclose(file);
+
+    return 0;
+}
+
+int bibliography_next_id(const char *filename,
+                         char *id,
+                         size_t id_size)
+{
+    FILE *file;
+    char line[4096];
+    int highest_id = 0;
+
+    if (filename == NULL ||
+        id == NULL ||
+        id_size == 0) {
+        return -1;
+    }
+
+    file = fopen(filename, "r");
+
+    if (file == NULL) {
+        perror("Unable to open bibliography");
+        return -1;
+    }
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+        int current_id;
+
+        if (sscanf(line, "ID=BC%d", &current_id) == 1) {
+            if (current_id > highest_id) {
+                highest_id = current_id;
+            }
+        }
+    }
+
+    fclose(file);
+
+    snprintf(id,
+             id_size,
+             "BC%06d",
+             highest_id + 1);
+
+    return 0;
+}
+
+int bibliography_exists_for_catalog(const char *filename,
+                                    const char *catalog_id)
+{
+    FILE *file;
+    char line[4096];
+    BibliographyRecord current;
+    int in_record = 0;
+
+    if (filename == NULL || catalog_id == NULL) {
+        return -1;
+    }
+
+    file = fopen(filename, "r");
+
+    if (file == NULL) {
+        /*
+         * An absent bibliography database means that no
+         * bibliography records exist yet.
+         */
+        return 0;
+    }
+
+    memset(&current, 0, sizeof(current));
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+        char *equals;
+        char *key;
+        char *value;
+
+        line[strcspn(line, "\r\n")] = '\0';
+
+        if (strcmp(line, "---") == 0) {
+            if (in_record &&
+                strcmp(current.catalog_id, catalog_id) == 0) {
+
+                fclose(file);
+                return 1;
+            }
+
+            memset(&current, 0, sizeof(current));
+            in_record = 0;
+            continue;
+        }
+
+        equals = strchr(line, '=');
+
+        if (equals == NULL) {
+            continue;
+        }
+
+        *equals = '\0';
+
+        key = line;
+        value = equals + 1;
+
+        in_record = 1;
+
+        if (strcmp(key, "CATALOG_ID") == 0) {
+            copy_field(current.catalog_id,
+                       sizeof(current.catalog_id),
+                       value);
+        }
+    }
+
+    if (in_record &&
+        strcmp(current.catalog_id, catalog_id) == 0) {
+
+        fclose(file);
+        return 1;
+    }
+
+    fclose(file);
+
+    return 0;
 }

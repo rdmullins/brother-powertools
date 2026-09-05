@@ -7,6 +7,7 @@
 #include "cards.h"
 #include "card_set.h"
 #include "transfer.h"
+#include "bibliography_add.h"
 
 #define BIB_DB "data/bibliography.db"
 #define BIB_MAX_RESULTS 50
@@ -273,7 +274,8 @@ void bibliography_menu(void)
         printf("Bibliography\n");
         printf("------------\n");
         printf("1. Search\n");
-        printf("2. Back\n");
+        printf("2. Add from Catalog\n");
+        printf("3. Back\n");
         printf("\n");
         printf("Select: ");
 
@@ -287,6 +289,10 @@ void bibliography_menu(void)
             break;
 
         case '2':
+            bibliography_add_from_catalog();
+            break;
+
+        case '3':
             return;
 
         default:

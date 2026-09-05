@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -8,6 +7,34 @@
 #include "openlibrary.h"
 #include "card_set.h"
 #include "cards.h"
+
+static void clear_input_line(void)
+{
+    int character;
+
+    while ((character = getchar()) != '\n' &&
+           character != EOF) {
+        /* discard remaining input */
+    }
+}
+
+static void read_field(const char *prompt,
+                       char *buffer,
+                       size_t buffer_size)
+{
+    printf("%s", prompt);
+
+    if (fgets(buffer, buffer_size, stdin) == NULL) {
+        buffer[0] = '\0';
+        return;
+    }
+
+    if (strchr(buffer, '\n') == NULL) {
+        clear_input_line();
+    }
+
+    buffer[strcspn(buffer, "\r\n")] = '\0';
+}
 
 static int catalog_add_select_subjects(const OpenLibraryBook *book,
                                        CatalogRecord *record)
@@ -74,6 +101,10 @@ static void catalog_add_by_isbn(void)
 {
     char isbn[32];
     OpenLibraryBook book;
+    CatalogRecord record;
+    char location[CATALOG_MAX_LOCATION];
+    char id[32];
+    char answer;
 
     printf("\n");
     printf("Add Book by ISBN\n");
@@ -104,8 +135,6 @@ static void catalog_add_by_isbn(void)
     printf("\n");
     printf("This is the information returned by Open Library.\n");
 
-        CatalogRecord record;
-
     memset(&record, 0, sizeof(record));
 
     strncpy(record.isbn,
@@ -134,11 +163,7 @@ static void catalog_add_by_isbn(void)
     }
 
     printf("\nSelected subjects:\n%s\n",
-        record.subjects);
-
-            char location[CATALOG_MAX_LOCATION];
-    char id[32];
-    char answer;
+           record.subjects);
 
     printf("\nPhysical location: ");
 
@@ -189,7 +214,100 @@ static void catalog_add_by_isbn(void)
 
     printf("\nBook added to catalog as %s.\n",
            record.id);
+}
 
+static void catalog_add_manual(void)
+{
+    CatalogRecord record;
+    char id[32];
+    char answer;
+
+    memset(&record, 0, sizeof(record));
+
+    printf("\n");
+    printf("Add Book Manually\n");
+    printf("-----------------\n");
+
+    /*
+     * catalog_add_menu() entered this function via scanf(),
+     * so consume its trailing newline before using fgets().
+     */
+    clear_input_line();
+
+    read_field("ISBN: ",
+               record.isbn,
+               sizeof(record.isbn));
+
+    read_field("Author: ",
+               record.author,
+               sizeof(record.author));
+
+    read_field("Title: ",
+               record.title,
+               sizeof(record.title));
+
+    read_field("Place: ",
+               record.place,
+               sizeof(record.place));
+
+    read_field("Publisher: ",
+               record.publisher,
+               sizeof(record.publisher));
+
+    read_field("Year: ",
+               record.year,
+               sizeof(record.year));
+
+    read_field("Subjects: ",
+               record.subjects,
+               sizeof(record.subjects));
+
+    read_field("Physical location: ",
+               record.location,
+               sizeof(record.location));
+
+    if (record.title[0] == '\0') {
+        printf("\nA title is required. Book not added.\n");
+        return;
+    }
+
+    if (catalog_next_id("data/catalog.db",
+                        id,
+                        sizeof(id)) != 0) {
+        printf("\nUnable to determine the next catalog ID.\n");
+        return;
+    }
+
+    strncpy(record.id,
+            id,
+            sizeof(record.id) - 1);
+
+    record.id[sizeof(record.id) - 1] = '\0';
+
+    printf("\nCatalog Record\n");
+    printf("--------------\n");
+
+    catalog_display(&record);
+
+    printf("\nSave this record? (y/n): ");
+
+    if (scanf(" %c", &answer) != 1) {
+        return;
+    }
+
+    if (answer != 'y' && answer != 'Y') {
+        printf("\nBook not added.\n");
+        return;
+    }
+
+    if (catalog_save("data/catalog.db",
+                     &record) != 0) {
+        printf("\nUnable to save book.\n");
+        return;
+    }
+
+    printf("\nBook added to catalog as %s.\n",
+           record.id);
 }
 
 void catalog_add_menu(void)
@@ -223,7 +341,7 @@ void catalog_add_menu(void)
             break;
 
         case 2:
-            printf("\nManual entry coming soon.\n");
+            catalog_add_manual();
             break;
 
         case 3:

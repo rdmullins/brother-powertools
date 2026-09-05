@@ -27,6 +27,107 @@ int citation_generate(const BibliographyRecord *record,
         return 0;
     }
 
+/*
+ * Automatic formatter: book.
+ */
+if (strcmp(record->type, "BOOK") == 0) {
+    int written;
+
+    if (record->author[0] != '\0' &&
+        record->place[0] != '\0' &&
+        record->publisher[0] != '\0' &&
+        record->date[0] != '\0') {
+
+        written = snprintf(
+            output,
+            output_size,
+            "%s. %s. %s: %s, %s.",
+            record->author,
+            record->title,
+            record->place,
+            record->publisher,
+            record->date
+        );
+
+    } else if (record->author[0] != '\0' &&
+               record->place[0] != '\0' &&
+               record->publisher[0] != '\0') {
+
+        written = snprintf(
+            output,
+            output_size,
+            "%s. %s. %s: %s.",
+            record->author,
+            record->title,
+            record->place,
+            record->publisher
+        );
+
+    } else if (record->author[0] != '\0' &&
+               record->publisher[0] != '\0' &&
+               record->date[0] != '\0') {
+
+        written = snprintf(
+            output,
+            output_size,
+            "%s. %s. %s, %s.",
+            record->author,
+            record->title,
+            record->publisher,
+            record->date
+        );
+
+    } else if (record->author[0] != '\0' &&
+               record->date[0] != '\0') {
+
+        written = snprintf(
+            output,
+            output_size,
+            "%s. %s. %s.",
+            record->author,
+            record->title,
+            record->date
+        );
+
+    } else if (record->author[0] != '\0') {
+
+        written = snprintf(
+            output,
+            output_size,
+            "%s. %s.",
+            record->author,
+            record->title
+        );
+
+    } else if (record->date[0] != '\0') {
+
+        written = snprintf(
+            output,
+            output_size,
+            "%s. %s.",
+            record->title,
+            record->date
+        );
+
+    } else {
+
+        written = snprintf(
+            output,
+            output_size,
+            "%s.",
+            record->title
+        );
+    }
+
+    if (written < 0 ||
+        (size_t)written >= output_size) {
+        output[0] = '\0';
+        return -1;
+    }
+
+    return 0;
+}
+
     /*
      * First automatic formatter: journal article.
      */
@@ -81,6 +182,67 @@ int citation_generate(const BibliographyRecord *record,
 
         return 0;
     }
+
+/*
+ * Automatic formatter: thesis.
+ */
+if (strcmp(record->type, "THESIS") == 0) {
+    int written;
+
+    if (record->institution[0] != '\0' &&
+        record->date[0] != '\0') {
+
+        written = snprintf(
+            output,
+            output_size,
+            "%s. %s. %s, %s.",
+            record->author,
+            record->title,
+            record->institution,
+            record->date
+        );
+
+    } else if (record->institution[0] != '\0') {
+
+        written = snprintf(
+            output,
+            output_size,
+            "%s. %s. %s.",
+            record->author,
+            record->title,
+            record->institution
+        );
+
+    } else if (record->date[0] != '\0') {
+
+        written = snprintf(
+            output,
+            output_size,
+            "%s. %s. %s.",
+            record->author,
+            record->title,
+            record->date
+        );
+
+    } else {
+
+        written = snprintf(
+            output,
+            output_size,
+            "%s. %s.",
+            record->author,
+            record->title
+        );
+    }
+
+    if (written < 0 ||
+        (size_t)written >= output_size) {
+        output[0] = '\0';
+        return -1;
+    }
+
+    return 0;
+}
 
     /*
      * We don't know how to automatically cite this
