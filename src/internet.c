@@ -18,7 +18,8 @@ void internet_menu(void)
             "|  1. Wikipedia                               |\n"
             "|  2. Private Heaven II BBS                   |\n"
             "|  3. Level29 BBS                             |\n"
-            "|  4. Back                                    |\n"
+            "|  4. Particles! BBS                          |\n"
+            "|  5. Back                                    |\n"
             "+---------------------------------------------+\n"
             "\n"
             "Enter your choice: "
@@ -51,6 +52,10 @@ void internet_menu(void)
                 break;
 
             case 4:
+                system("telnet bbs.particles.net 6400");
+                break;
+
+            case 5:
                 return;
 
             default:
