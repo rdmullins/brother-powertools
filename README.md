@@ -16,6 +16,8 @@ Allows the user to recieve plain-text files from the Linux host for use in word-
 A selection of internet utilities suited for the brother's teletype display.
 - Wikipedia
 -- The user specifies an article title and it is retrieved in plain text form. The user then specifies the amount of free space on the brother and the resultant plain text file is split into sections of that size, which can then be transferred to the brother's memory for printing, use in word processing or saved to disk.
+- Wiktionary
+-- Same functionality as Wikipedia; user can look up a word and then send the definition(s) to the brother as a WP file.
 - Private Heaven II BBS
 - Level29 BBS
 

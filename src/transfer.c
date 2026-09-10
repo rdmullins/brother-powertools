@@ -181,6 +181,10 @@ int send_ascii_file(const char *filename)
     printf("\n");
     printf("Enter the filename on the Brother.\n");
     printf("When the Brother is ready to receive, press ENTER here.\n");
+    printf("\n");
+    printf("After the file finishes transferring, press Code+File\n");
+    printf("on the Brother to end Receive mode.\n");
+    printf("Save the file on the Brother, then press ENTER here.\n");
 
     getchar();
 
@@ -296,11 +300,10 @@ while (total_written < output_length) {
 tcdrain(fd);
 
 /*
- * Do not print anything here.
- *
- * The Brother is still in Receive mode. The operator must
- * press FILE, save the file, return to Communications,
- * and then press ENTER in PowerTools.
+ * The Brother has received the complete file, but it is
+ * still in Receive mode. The operator must press Code+File
+ * on the Brother to end file reception before PowerTools
+ * continues.
  */
 tcsetattr(fd, TCSANOW, &old_termios);
 

@@ -14,6 +14,7 @@
 #include "notes.h"
 #include "library_menu.h"
 #include "wiktionary.h"
+#include "gutenberg.h"
 
 
 void splash_screen(void);
