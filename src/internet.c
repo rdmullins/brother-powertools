@@ -3,6 +3,7 @@
 
 #include "internet.h"
 #include "wikipedia.h"
+#include "wiktionary.h"
 
 void internet_menu(void)
 {
@@ -16,10 +17,11 @@ void internet_menu(void)
             "|                  Internet                   |\n"
             "+---------------------------------------------+\n"
             "|  1. Wikipedia                               |\n"
-            "|  2. Private Heaven II BBS                   |\n"
-            "|  3. Level29 BBS                             |\n"
-            "|  4. Particles! BBS                          |\n"
-            "|  5. Back                                    |\n"
+            "|  2. Wiktionary                              |\n"
+            "|  3. Private Heaven II BBS                   |\n"
+            "|  4. Level29 BBS                             |\n"
+            "|  5. Particles! BBS                          |\n"
+            "|  6. Back                                    |\n"
             "+---------------------------------------------+\n"
             "\n"
             "Enter your choice: "
@@ -44,18 +46,22 @@ void internet_menu(void)
                 break;
 
             case 2:
-                system("nc bbs.sydbolton.ca 6502");
+                wiktionary_lookup();
                 break;
 
             case 3:
-                system("telnet bbs.fozztexx.com"); 
+                system("nc bbs.sydbolton.ca 6502");
                 break;
 
             case 4:
-                system("telnet bbs.particles.net 6400");
+                system("telnet bbs.fozztexx.com"); 
                 break;
 
-            case 5:
+            case 5:     
+                system("telnet bbs.particles.net 6400");
+                break;
+            
+            case 6:
                 return;
 
             default:

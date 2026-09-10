@@ -13,6 +13,7 @@
 #include "cards.h"
 #include "notes.h"
 #include "library_menu.h"
+#include "wiktionary.h"
 
 
 void splash_screen(void);
