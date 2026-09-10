@@ -18,8 +18,11 @@ A selection of internet utilities suited for the brother's teletype display.
 -- The user specifies an article title and it is retrieved in plain text form. The user then specifies the amount of free space on the brother and the resultant plain text file is split into sections of that size, which can then be transferred to the brother's memory for printing, use in word processing or saved to disk.
 - Wiktionary
 -- Same functionality as Wikipedia; user can look up a word and then send the definition(s) to the brother as a WP file.
+- Project Gutenberg
+-- User can search the Project Gutenberg e-text archives for a title, select the title for download, and PowerTools will split it into individual WP files the same size as the brother's free memory for priting or saving to disk.
 - Private Heaven II BBS
 - Level29 BBS
+- Particles! BBS
 
 # Games
 - Adventure
