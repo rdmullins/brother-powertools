@@ -5,6 +5,7 @@
 #include "wikipedia.h"
 #include "wiktionary.h"
 #include "gutenberg.h"
+#include "sourcebooks.h"
 
 void internet_menu(void)
 {
@@ -20,10 +21,11 @@ void internet_menu(void)
             "|  1. Wikipedia                               |\n"
             "|  2. Wiktionary                              |\n"
             "|  3. Project Gutenberg                       |\n"
-            "|  4. Private Heaven II BBS                   |\n"
-            "|  5. Level29 BBS                             |\n"
-            "|  6. Particles! BBS                          |\n"
-            "|  7. Back                                    |\n"
+            "|  4. Internet History Sourcebooks            |\n"
+            "|  5. Private Heaven II BBS                   |\n"
+            "|  6. Level29 BBS                             |\n"
+            "|  7. Particles! BBS                          |\n"
+            "|  8. Back                                    |\n"
             "+---------------------------------------------+\n"
             "\n"
             "Enter your choice: "
@@ -56,18 +58,22 @@ void internet_menu(void)
                 break;
 
             case 4:
-                system("telnet bbs.privateheaven.com 6400");
+                sourcebooks_lookup();
                 break;
 
             case 5:
+                system("telnet bbs.privateheaven.com 6400");
+                break;
+
+            case 6: 
                 system("telnet bbs.fozztexx.com"); 
                 break;
 
-            case 6:     
+            case 7:     
                 system("telnet particlesbbs.dyndns.org 6400");
                 break;
             
-            case 7:
+            case 8:
                 return;
 
             default:

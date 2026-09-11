@@ -15,6 +15,7 @@
 #include "library_menu.h"
 #include "wiktionary.h"
 #include "gutenberg.h"
+#include "sourcebooks.h"
 
 
 void splash_screen(void);
@@ -24,6 +25,7 @@ void wait_for_enter(void);
 int main (void)
 {
 
+    //sourcebooks_lookup();
     splash_screen();
     main_menu();
     return 0;
