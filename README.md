@@ -20,6 +20,8 @@ A selection of internet utilities suited for the brother's teletype display.
 -- Same functionality as Wikipedia; user can look up a word and then send the definition(s) to the brother as a WP file.
 - Project Gutenberg
 -- User can search the Project Gutenberg e-text archives for a title, select the title for download, and PowerTools will split it into individual WP files the same size as the brother's free memory for priting or saving to disk.
+- Internet History Sourcebook
+-- Collection of public-domain plain text historical documents.
 - Private Heaven II BBS
 - Level29 BBS
 - Particles! BBS

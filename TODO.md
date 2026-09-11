@@ -13,4 +13,13 @@
 - [ ] Add options to Internet menu - Gopher, Databases, Text Archives
 - [ ] Is Usenet still around?
 - [ ] Custom interface for H-Net
-- [ ] Wiktionary
+- [x] Wiktionary
+- [x] Internet History Sourcebook
+- [ ] Are there any libraries that still have text-only catalog lookup?
+- [ ] How to add text-only web sites like NPR and BBC news
+- [ ] Email attachments (at least text)
+- [ ] Email signature file
+- [ ] Is it possible to reverse engineer the disk apps that came with the brother?
+- [ ] Any government databases? Congressional record, etc.?
+- [ ] Could we make a weather widget?
+- [ ] Stock widget?
