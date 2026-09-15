@@ -18,7 +18,8 @@ void game_menu(void)
             "|  2. Star Trek                               |\n"
             "|  3. Hunt the Wumpus                         |\n"
             "|  4. Oregon Trail                            |\n"
-            "|  5. Exit                                    |\n"
+            "|  5. Zork                                    |\n"
+            "|  6. Return to Main Menu                     |\n"
             "+---------------------------------------------+\n"
             "\n"
             "Enter your choice: "
@@ -53,6 +54,10 @@ void game_menu(void)
                 break;
 
             case 5:
+                system("/usr/games/dfrotz $HOME/Zork/Zork1.dat");
+                break;
+
+            case 6:
                 return;
 
             default:
