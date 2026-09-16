@@ -5,6 +5,7 @@
 
 #include "wiktionary.h"
 #include "transfer.h"
+#include "viewer.h"
 
 #define JSON_FILE "/tmp/powertools-wiktionary.json"
 #define TEXT_FILE "/tmp/powertools-wiktionary.txt"
@@ -493,95 +494,48 @@ void wiktionary_lookup(void)
     printf("\nFound %d definition(s).\n", definitions);
 
     /*
-     * Ask how much room is available on the PowerNote.
-     */
-    printf("\n");
-    printf("How much free PowerNote memory is available?\n");
-    printf("Enter maximum part size in bytes: ");
+ * Offer the retrieved entry as either a screen-readable document
+ * or a PowerNote transfer.
+ */
+printf("\n");
+printf("What would you like to do?\n");
+printf("\n");
+printf("1. Read on screen\n");
+printf("2. Send to PowerNote\n");
+printf("3. Back\n");
+printf("\n");
+printf("Enter your choice: ");
 
-    if (scanf("%zu", &max_size) != 1)
+if (scanf("%d", &choice) != 1)
+{
+    int c;
+
+    while ((c = getchar()) != '\n' && c != EOF)
     {
-        int c;
-
-        while ((c = getchar()) != '\n' && c != EOF)
-        {
-            /* discard invalid input */
-        }
-
-        printf("Invalid size.\n");
-        return;
+        /* discard invalid input */
     }
 
-    getchar();
+    printf("Invalid choice.\n");
+    return;
+}
 
-    if (max_size == 0)
-    {
-        printf("Size must be greater than zero.\n");
-        return;
-    }
+getchar();
 
-    /*
-     * Split the entry into Brother-sized pieces.
-     */
-    parts = split_file(
-        TEXT_FILE,
-        "/tmp/powertools-wiktionary",
-        max_size
-    );
+switch (choice)
+{
+    case 1:
+        view_text_file(TEXT_FILE);
+        break;
 
-    if (parts < 0)
-    {
-        printf("Unable to split Wiktionary entry.\n");
-        return;
-    }
-
-    printf("\n");
-    printf("The Wiktionary entry will be sent in %d part%s.\n",
-           parts,
-           parts == 1 ? "" : "s");
-
-    /*
-     * Send each part.
-     */
-    current_part = 1;
-
-    while (current_part <= parts)
-    {
-        snprintf(part_filename,
-                 sizeof(part_filename),
-                 "/tmp/powertools-wiktionary_%02d.txt",
-                 current_part);
-
-        if (send_transfer_part(part_filename,
-                               current_part,
-                               parts) != 0)
-        {
-            return;
-        }
-
-        if (current_part == parts)
-        {
-            printf("\n");
-            printf("All parts have been transferred.\n");
-            break;
-        }
-
+    case 2:
+        /*
+         * Ask how much room is available on the PowerNote.
+         */
         printf("\n");
-        printf("+---------------------------------------------+\n");
-        printf("|              brother PowerTools             |\n");
-        printf("|             Wiktionary Transfer             |\n");
-        printf("+---------------------------------------------+\n");
-        printf("| Part %d of %d complete.                      |\n",
-               current_part,
-               parts);
-        printf("|                                             |\n");
-        printf("| 1. Send next part                          |\n");
-        printf("| 2. Cancel transfer                         |\n");
-        printf("+---------------------------------------------+\n");
-        printf("\n");
-        printf("Enter your choice: ");
+        printf("How much free PowerNote memory is available?\n");
+        printf("Enter maximum part size in bytes: ");
 
-        if (scanf("%d", &choice) != 1)
+        if (scanf("%zu", &max_size) != 1)
         {
             int c;
 
@@ -590,20 +544,112 @@ void wiktionary_lookup(void)
                 /* discard invalid input */
             }
 
-            printf("Invalid input. Transfer cancelled.\n");
+            printf("Invalid size.\n");
             return;
         }
 
         getchar();
 
-        if (choice == 1)
+        if (max_size == 0)
         {
-            current_part++;
-        }
-        else
-        {
-            printf("Transfer cancelled.\n");
+            printf("Size must be greater than zero.\n");
             return;
         }
-    }
+
+        /*
+         * Split the entry into Brother-sized pieces.
+         */
+        parts = split_file(
+            TEXT_FILE,
+            "/tmp/powertools-wiktionary",
+            max_size
+        );
+
+        if (parts < 0)
+        {
+            printf("Unable to split Wiktionary entry.\n");
+            return;
+        }
+
+        printf("\n");
+        printf("The Wiktionary entry will be sent in %d part%s.\n",
+               parts,
+               parts == 1 ? "" : "s");
+
+        /*
+         * Send each part.
+         */
+        current_part = 1;
+
+        while (current_part <= parts)
+        {
+            snprintf(part_filename,
+                     sizeof(part_filename),
+                     "/tmp/powertools-wiktionary_%02d.txt",
+                     current_part);
+
+            if (send_transfer_part(part_filename,
+                                   current_part,
+                                   parts) != 0)
+            {
+                return;
+            }
+
+            if (current_part == parts)
+            {
+                printf("\n");
+                printf("All parts have been transferred.\n");
+                break;
+            }
+
+            printf("\n");
+            printf("+---------------------------------------------+\n");
+            printf("|              brother PowerTools             |\n");
+            printf("|             Wiktionary Transfer             |\n");
+            printf("+---------------------------------------------+\n");
+            printf("| Part %d of %d complete.                      |\n",
+                   current_part,
+                   parts);
+            printf("|                                             |\n");
+            printf("| 1. Send next part                          |\n");
+            printf("| 2. Cancel transfer                         |\n");
+            printf("+---------------------------------------------+\n");
+            printf("\n");
+            printf("Enter your choice: ");
+
+            if (scanf("%d", &choice) != 1)
+            {
+                int c;
+
+                while ((c = getchar()) != '\n' && c != EOF)
+                {
+                    /* discard invalid input */
+                }
+
+                printf("Invalid input. Transfer cancelled.\n");
+                return;
+            }
+
+            getchar();
+
+            if (choice == 1)
+            {
+                current_part++;
+            }
+            else
+            {
+                printf("Transfer cancelled.\n");
+                return;
+            }
+        }
+
+        break;
+
+    case 3:
+        return;
+
+    default:
+        printf("Invalid choice.\n");
+        return;
+}
 }

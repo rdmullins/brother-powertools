@@ -7,6 +7,7 @@
 
 #include "wikipedia.h"
 #include "transfer.h"
+#include "viewer.h"
 
 #define WIKIPEDIA_API_URL \
     "https://en.wikipedia.org/w/api.php?action=query" \
@@ -272,8 +273,9 @@ printf("\n");
 printf("Article retrieved successfully.\n");
 printf("Article size: %ld bytes\n", article_size);
 printf("\n");
-printf("1. Send article to PowerNote\n");
-printf("2. Back\n");
+printf("1. Read on screen\n");
+printf("2. Send article to PowerNote\n");
+printf("3. Back\n");
 printf("\n");
 printf("Enter your choice: ");
 
@@ -291,7 +293,12 @@ if (scanf("%d", &choice) != 1) {
 getchar();
 
     switch (choice) {
-        case 1: {
+
+        case 1:
+            view_text_file(WIKIPEDIA_TEXT_FILE);
+            break;
+
+        case 2: {
         char part_filename[1024];
 
         printf("\n");
@@ -398,7 +405,7 @@ transfer.total_parts = parts;
         break;
     }
 
-    case 2:
+    case 3:
         return;
 
     default:
