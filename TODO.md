@@ -23,3 +23,6 @@
 - [ ] Any government databases? Congressional record, etc.?
 - [ ] Could we make a weather widget?
 - [ ] Stock widget?
+- [ ] Build wifi modem
+- [ ] Expose Linux connection for wifi modem use
+- [ ] Add read-on-screen (and search) to Gutenberg books

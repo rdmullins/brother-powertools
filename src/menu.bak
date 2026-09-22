@@ -16,14 +16,12 @@
 #include "wiktionary.h"
 #include "gutenberg.h"
 #include "sourcebooks.h"
-#include "weather.h"
-#include "npr.h"
+
 
 void splash_screen(void);
 void main_menu(void);
 void wait_for_enter(void);
-void draw_weather_tile(int row, WeatherCondition condition, int temperature);
-void weather_menu(void);
+void draw_weather_tile(void);
 
 int main (void)
 {
@@ -71,10 +69,8 @@ int main (void)
     } // End splash_screen
 
     void main_menu(void) {
-    int choice;
-    WeatherData weather;
 
-    weather_get_current(&weather);
+        int choice;
 
         while (1) {
 
@@ -93,9 +89,13 @@ int main (void)
                 "| |     ------->  |  |               |  |        *!*    |  |               |  |\n"
                 "| |  1. Transfer  |  |  2. Internet  |  |   3. Games    |  |   4. BASIC    |  |\n"
                 "| +---------------+  +---------------+  +---------------+  +---------------+  |\n"
-                "| +---------------+  +---------------+  +---------------+  +---------------+  |\n"
-                );
-
+                "|                    +---------------+  +---------------+                     |\n"
+                "|                    |     ______    |  | []  [][]      |                     |\n"
+                "|                    |     |\\  /|    |  | [][][][][][]  |                     |\n"
+                "|                    |     |_\\/_|    |  | [][][][][][]  |                     |\n"
+                "|                    |    5. Email   |  |  6. Library   |                     |\n"
+                "|                    +---------------+  +---------------+                     |\n"
+                "|______________________________Enter 7 to Exit________________________________|\n"
 //            );            
 
 //        printf(
@@ -113,34 +113,10 @@ int main (void)
 //            "|                                             |\n"
 //            "|                 7. Exit                     |\n"
 //            "+---------------------------------------------+\n"
-draw_weather_tile(0, weather.condition, weather.temperature);
-printf("  |     ______    |  | []  [][]      |  ");
-printf("|  __________   |  |\n");
-
-draw_weather_tile(1, weather.condition, weather.temperature);
-printf("  |     |\\  /|    |  | [][][][][][]  |  ");
-printf("| |===  npr  |  |  |\n");
-
-draw_weather_tile(2, weather.condition, weather.temperature);
-printf("  |     |_\\/_|    |  | [][][][][][]  |  ");
-printf("| |=== o   o |  |  |\n");
-
-draw_weather_tile(3, weather.condition, weather.temperature);
-printf("  |    6. Email   |  |  7. Library   |  |  8. NPR News  |  ");
-printf("|\n");
-        //printf("|    6. Email   |  |  7. Library   |  |  8. NPR News  |                  |\n");
-        printf("| +---------------+  +---------------+  +---------------+  +---------------+  |\n"
-            "|______________________________Enter 9 to Exit________________________________|\n"
             "\n"
             "Enter your choice: "
         );
-// +--------------+
-// |  __________  |
-// |  |===  npr | |
-// |  |=== o   o| |
-// | 8. NPR News  |
-// +--------------+
-    
+
         if (scanf("%d", &choice) != 1) {
             printf("scanf failed!\n");
             return;
@@ -163,21 +139,13 @@ printf("|\n");
                 system("bwbasic");
                 break;
             case 5:
-                printf("You selected Weather\n");
-                weather_menu();
-                break;
-            case 6:
                 mail_menu();
                 break;
-            case 7:
+            case 6:
                 printf("You selected Library\n");
                 library_menu();
                 break;
-            case 8:
-                printf("You selected NPR News\n");
-                npr_lookup();
-                break; 
-            case 9:
+            case 7:
                 printf("Exiting...\n");
                 return;
             default:
@@ -186,164 +154,7 @@ printf("|\n");
 
         } // End while
   
-        } // End main_menu
-
-
-void weather_menu(void)
-{
-    int choice;
-    WeatherData weather;
-
-    weather_get_current(&weather);
-
-    while (1) {
-        printf(
-            "\f"
-            "_______________________________________________________________________________\n"
-            "|                                                                             |\n"
-            "|                              WEATHER                                       |\n"
-            "|                                                                             |\n"
-            "|   1. Current Conditions                                                    |\n"
-            "|   2. Extended Forecast                                                     |\n"
-            "|   3. Change Location                                                       |\n"
-            "|   4. Refresh                                                               |\n"
-            "|   5. Return                                                                |\n"
-            "|                                                                             |\n"
-            "|_____________________________________________________________________________|\n"
-            "\n"
-            "Choice: "
-        );
-
-        if (scanf("%d", &choice) != 1) {
-            while (getchar() != '\n')
-                ;
-            continue;
-        }
-
-        while (getchar() != '\n')
-            ;
-
-        switch (choice) {
-               
-            case 1:
-                printf("\nCurrent Conditions\n");
-                printf("------------------\n");
-                printf("%s, %s\n\n", weather.city, weather.state);
-
-                printf("%s\n", weather.description);
-                printf("%d F\n", weather.temperature);
-                printf("Feels like %d F\n", weather.feels_like);
-
-                printf("\nHumidity: %d%%\n", weather.humidity);
-                printf("Pressure: %d hPa\n", weather.pressure);
-                printf("Wind: %.0f mph\n", weather.wind_speed);
-
-                wait_for_enter();
-                break;
-
-            case 2:
-                printf("\nExtended Forecast\n");
-                printf("------------------\n");
-                printf("Forecast coming soon.\n");
-                wait_for_enter();
-                break;
-
-            case 3:
-                printf("\nChange Location\n");
-                printf("---------------\n");
-                printf("Location selection coming soon.\n");
-                wait_for_enter();
-                break;
-
-            case 4:
-                printf("\nWeather refreshed.\n");
-                wait_for_enter();
-                break;
-
-            case 5:
-                return;
-
-            default:
-                printf("\nInvalid choice.\n");
-                wait_for_enter();
-                break;
-        }
-    }
-}
-
-    void draw_weather_tile(int row, WeatherCondition condition, int temperature)
-    {
-        switch (condition) {
-
-            case WEATHER_SUNNY:
-                switch (row) {
-                    case 0:
-                        printf("| |  \\|/ Sunny    |");
-                        break;
-                    case 1:
-                        printf("| | --*--  %3d    |", temperature);
-                        break;
-                    case 2:
-                        printf("| |  /|\\          |");
-                        break;
-                    case 3:
-                        printf("| |  5. Weather   |");
-                        break;
-                }
-                break;
-
-            case WEATHER_CLOUDY:
-                switch (row) {
-                    case 0:
-                        printf("| | ((())) Cloudy |");
-                        break;
-                    case 1:
-                        printf("| | ((()))   %3d  |", temperature);
-                        break;
-                    case 2:
-                        printf("| |               |");
-                        break;
-                    case 3:
-                        printf("| |  5. Weather   |");
-                        break;
-                }
-                break;
-
-            case WEATHER_RAINY:
-                switch (row) {
-                    case 0:
-                        printf("| | ((())) Rainy  |");
-                        break;
-                    case 1:
-                        printf("| |  ////   %3d   |", temperature);
-                        break;
-                    case 2:
-                        printf("| | ////          |");
-                        break;
-                    case 3:
-                        printf("| |  5. Weather   |");
-                        break;
-                }
-                break;
-
-            case WEATHER_SNOWY:
-                switch (row) {
-                    case 0:
-                        printf("| | ((())) Snow   |");
-                        break;
-                    case 1:
-                        printf("| |  * *    %3d   |", temperature);
-                        break;
-                    case 2:
-                        printf("| | * *           |");
-                        break;
-                    case 3:
-                        printf("| |  5. Weather   |");
-                        break;
-                }
-                break;
-        }
-    }
+        }; // End main_menu
 
     void wait_for_enter(void) {
         fd_set input;
@@ -365,6 +176,7 @@ void weather_menu(void)
         }
 
 
+    
  
 //    printf("+---------------------------------------------+\n");
 //    printf("|   |_   _   _  _|_ |_   _   _                |\n");
