@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <sys/select.h>
 #include <unistd.h>
+#include <string.h>
+#include <time.h>
 
 #include "internet.h"
 #include "transfer.h"
@@ -33,7 +35,57 @@ int main (void)
     main_menu();
     return 0;
 }
+static void forecast_weekday(const char *date, char *weekday, size_t size)
+{
+    struct tm tm_date;
 
+    memset(&tm_date, 0, sizeof(tm_date));
+
+    if (sscanf(date,
+               "%d-%d-%d",
+               &tm_date.tm_year,
+               &tm_date.tm_mon,
+               &tm_date.tm_mday) != 3) {
+
+        snprintf(weekday, size, "???");
+        return;
+    }
+
+    tm_date.tm_year -= 1900;
+    tm_date.tm_mon -= 1;
+
+    /*
+     * mktime() needs a reasonably complete struct tm.
+     */
+    tm_date.tm_hour = 12;
+
+    if (mktime(&tm_date) == (time_t)-1) {
+        snprintf(weekday, size, "???");
+        return;
+    }
+
+    strftime(weekday, size, "%a", &tm_date);
+}
+
+static const char *forecast_condition_name(WeatherCondition condition)
+{
+    switch (condition) {
+        case WEATHER_SUNNY:
+            return "Sunny";
+
+        case WEATHER_CLOUDY:
+            return "Cloudy";
+
+        case WEATHER_RAINY:
+            return "Rain";
+
+        case WEATHER_SNOWY:
+            return "Snow";
+
+        default:
+            return "Unknown";
+    }
+}
 
     void splash_screen(void) {
 
@@ -196,6 +248,12 @@ void weather_menu(void)
 
     weather_get_current(&weather);
 
+    printf("DEBUG WEATHER: valid=%d city='%s' temp=%d condition=%d\n",
+       weather.valid,
+       weather.city,
+       weather.temperature,
+       weather.condition);
+
     while (1) {
         printf(
             "\f"
@@ -241,24 +299,102 @@ void weather_menu(void)
                 wait_for_enter();
                 break;
 
-            case 2:
-                printf("\nExtended Forecast\n");
-                printf("------------------\n");
-                printf("Forecast coming soon.\n");
-                wait_for_enter();
-                break;
+case 2:
+{
+    WeatherForecast forecast;
 
-            case 3:
-                printf("\nChange Location\n");
-                printf("---------------\n");
-                printf("Location selection coming soon.\n");
-                wait_for_enter();
-                break;
+    printf("\nExtended Forecast\n");
+    printf("------------------\n");
+
+    if (weather_get_forecast(&forecast)) {
+
+printf("%s, %s\n\n",
+       forecast.city,
+       forecast.state);
+
+for (int i = 0; i < forecast.count; i++) {
+
+    char weekday[4];
+    const char *condition;
+
+    forecast_weekday(forecast.days[i].day,
+                     weekday,
+                     sizeof(weekday));
+
+    condition = forecast_condition_name(
+                    forecast.days[i].condition);
+
+    printf("%s  %-10s %2d / %2d   Rain %2d%%\n",
+           weekday,
+           condition,
+           forecast.days[i].high,
+           forecast.days[i].low,
+           forecast.days[i].precipitation_chance);
+}
+
+    } else {
+        printf("Unable to retrieve forecast.\n");
+    }
+
+    wait_for_enter();
+    break;
+}
+
+case 3:
+{
+    char city[64];
+    char state[32];
+    char country[8];
+
+    printf("\nChange Location\n");
+    printf("---------------\n");
+
+    printf("City: ");
+    if (fgets(city, sizeof(city), stdin) == NULL)
+        break;
+
+    city[strcspn(city, "\n")] = '\0';
+
+    printf("State: ");
+    if (fgets(state, sizeof(state), stdin) == NULL)
+        break;
+
+    state[strcspn(state, "\n")] = '\0';
+
+    printf("Country: ");
+    if (fgets(country, sizeof(country), stdin) == NULL)
+        break;
+
+    country[strcspn(country, "\n")] = '\0';
+
+if (weather_set_location(city, state, country)) {
+
+    if (weather_get_current(&weather)) {
+        printf("\nLocation changed to %s, %s, %s.\n",
+               city, state, country);
+    } else {
+        printf("\nLocation changed, but weather could not be retrieved.\n");
+    }
+
+} else {
+    printf("\nLocation not found. Location unchanged.\n");
+}
+
+wait_for_enter();
+break;
+}
 
             case 4:
-                printf("\nWeather refreshed.\n");
-                wait_for_enter();
-                break;
+    printf("\nRefreshing weather...\n");
+
+    if (weather_get_current(&weather)) {
+        printf("Weather updated.\n");
+    } else {
+        printf("Unable to retrieve weather.\n");
+    }
+
+    wait_for_enter();
+    break;
 
             case 5:
                 return;
