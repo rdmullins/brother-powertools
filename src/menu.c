@@ -20,12 +20,14 @@
 #include "sourcebooks.h"
 #include "weather.h"
 #include "npr.h"
+#include "lan_gateway.h"
 
 void splash_screen(void);
 void main_menu(void);
 void wait_for_enter(void);
 void draw_weather_tile(int row, WeatherCondition condition, int temperature);
 void weather_menu(void);
+void lan_gateway(void);
 
 int main (void)
 {
@@ -182,8 +184,9 @@ printf("  |    6. Email   |  |  7. Library   |  |  8. NPR News  |  ");
 printf("|\n");
         //printf("|    6. Email   |  |  7. Library   |  |  8. NPR News  |                  |\n");
         printf("| +---------------+  +---------------+  +---------------+  +---------------+  |\n"
-            "|______________________________Enter 9 to Exit________________________________|\n"
-            "\n"
+//            "|______________________________Enter 9 to Exit________________________________|\n"
+"|__________________________0. LAN Gateway   9. Exit___________________________|\n"
+"\n"
             "Enter your choice: "
         );
 // +--------------+
@@ -198,7 +201,13 @@ printf("|\n");
             return;
         };
 
+
+        
         switch (choice) {
+            case 0:
+    printf("Starting LAN Gateway...\n");
+    lan_gateway();
+    break;
             case 1:
                 transfer_menu();
                 break;
