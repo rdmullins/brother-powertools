@@ -14,17 +14,14 @@
 
 #define NPR_HEADLINE_WIDTH 74
 
-#define MAX_STORIES 20
-#define MAX_TITLE 512
-#define MAX_URL 256
 #define MAX_HTML_SIZE (1024 * 1024 * 4)
 #define NPR_STORIES_PER_PAGE 15
 
-typedef struct
-{
-    char title[MAX_TITLE];
-    char url[256];
-} NPRStory;
+//typedef struct
+//{
+//    char title[MAX_TITLE];
+//    char url[256];
+//} NPRStory;
 
 
 
@@ -207,7 +204,7 @@ static int parse_headlines(const char *html,
              * We first copy it into a temporary buffer.
              */
             {
-                char raw_title[MAX_TITLE];
+                char raw_title[NPR_MAX_TITLE];
 
                 memcpy(raw_title,
                        title_start,
@@ -453,16 +450,117 @@ static int convert_article(const char *html, FILE *out)
     return 0;
 }
 
+int npr_get_headlines(NPRStory stories[], int max_stories)
+{
+    char *html;
+    long html_size;
+    int story_count;
+
+    if (stories == NULL || max_stories <= 0)
+        return 0;
+
+    if (fetch_url(NPR_HOME_URL, NPR_HOME_FILE) != 0)
+        return 0;
+
+    html = read_file(NPR_HOME_FILE, &html_size);
+
+    if (html == NULL)
+        return 0;
+
+    story_count = parse_headlines(
+        html,
+        stories,
+        max_stories
+    );
+
+    free(html);
+
+    return story_count;
+}
+
+int npr_fetch_article(const NPRStory *story)
+{
+    char article_url[NPR_MAX_URL];
+    char *html;
+    long html_size;
+
+    if (story == NULL)
+        return 0;
+
+    if (story->url[0] != '/')
+        return 0;
+
+    if (snprintf(article_url,
+                 sizeof(article_url),
+                 "%s%s",
+                 NPR_BASE_URL,
+                 story->url)
+        >= (int)sizeof(article_url))
+    {
+        return 0;
+    }
+
+    if (fetch_url(article_url, NPR_HOME_FILE) != 0)
+        return 0;
+
+    html = read_file(NPR_HOME_FILE, &html_size);
+
+    if (html == NULL)
+        return 0;
+
+    {
+        FILE *out = fopen(NPR_TEXT_FILE, "w");
+
+        if (out == NULL)
+        {
+            free(html);
+            return 0;
+        }
+
+        fprintf(out,
+                "%s\n\n",
+                story->title);
+
+        if (convert_article(html, out) != 0)
+        {
+            fclose(out);
+            free(html);
+            return 0;
+        }
+
+        fprintf(out,
+                "\nSource: NPR\n"
+                "%s\n",
+                article_url);
+
+        fclose(out);
+    }
+
+    free(html);
+
+    return 1;
+}
+
+int npr_read_article(const NPRStory *story)
+{
+    if (!npr_fetch_article(story))
+        return 0;
+
+    view_text_file(NPR_TEXT_FILE);
+
+    return 1;
+}
 
 /*
  * Fetch and display NPR news.
  */
 void npr_lookup(void)
 {
-    NPRStory stories[MAX_STORIES];
+    NPRStory stories[NPR_MAX_STORIES];
 
     char *html;
     long html_size;
+
 int page = 0;
     int story_count;
     int choice;
@@ -497,7 +595,7 @@ int page = 0;
         story_count = parse_headlines(
             html,
             stories,
-            MAX_STORIES
+            NPR_MAX_STORIES
         );
 
         free(html);
@@ -608,7 +706,7 @@ while (1)
          * Build the selected article URL.
          */
         {
-            char article_url[MAX_URL];
+            char article_url[NPR_MAX_URL];
 
 if (stories[choice - 1].url[0] != '/')
 {
