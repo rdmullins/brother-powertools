@@ -40,3 +40,10 @@ LOCATOR=The Peninsula Times Tribune, 10/27/1958
 USE=Contemporary Reception
 TEXT=Dorothy Nichols, in reviewing Lehrer's sold-out performance Oct. 25, 1958 at Stanford's Memorial Hall, wrote that "Like the best satirists he is a gloomy idealist, measuring professions of faith against performances." This included WWAGTWWG, which Nichols said Lehrer "[put] the age of anxiety" into.
 ---
+ID=NC000056
+BIB_ID=BC000001
+TITLE=LAN Note
+LOCATOR=Test
+USE=Testing
+TEXT=This is a test note from the remote Brother terminal connected via wifi modem to the Linux host.
+---
