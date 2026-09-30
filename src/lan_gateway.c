@@ -11,6 +11,8 @@
 #include "lan_gateway.h"
 #include "weather.h"
 #include "npr.h"
+#include "wikipedia.h"
+#include "wiktionary.h"
 #include "catalog.h"
 #include "bibliography.h"
 #include "notes.h"
@@ -1643,6 +1645,530 @@ static void library_menu(int client_fd)
     }
 }
 
+static void send_wikipedia_article(int client_fd)
+{
+    FILE *fp;
+
+    char lines[512][82];
+    int line_count = 0;
+    int page = 0;
+
+    fp = fopen("/tmp/powertools-wikipedia.txt", "r");
+
+    if (fp == NULL)
+    {
+        send_text(
+            client_fd,
+            "\r\n"
+            "Unable to open Wikipedia article.\r\n"
+        );
+
+        return;
+    }
+
+    /*
+     * Read the article and wrap it to fit the
+     * Brother's 80-column display.
+     */
+    char input[512];
+
+    while (fgets(input, sizeof(input), fp) != NULL)
+    {
+        char *word = input;
+
+        while (*word != '\0')
+        {
+            while (*word == ' ' || *word == '\t')
+                word++;
+
+            if (*word == '\0' || *word == '\n')
+                break;
+
+            char wrapped[80];
+            int width = 0;
+
+            while (*word != '\0' &&
+                   *word != '\n' &&
+                   width < 76)
+            {
+                if (*word == ' ')
+                {
+                    char *next = word + 1;
+
+                    while (*next == ' ')
+                        next++;
+
+                    if (*next == '\0' ||
+                        *next == '\n')
+                    {
+                        word = next;
+                        break;
+                    }
+                }
+
+                wrapped[width++] = *word;
+                word++;
+            }
+
+            wrapped[width] = '\0';
+
+            /*
+             * If we stopped in the middle of a word,
+             * back up to the last space.
+             */
+            if (*word != '\0' &&
+                *word != '\n' &&
+                width >= 76)
+            {
+                int split = width - 1;
+
+                while (split >= 0 &&
+                       wrapped[split] != ' ')
+                {
+                    split--;
+                }
+
+                if (split > 0)
+                {
+                    word -= width - split - 1;
+                    wrapped[split] = '\0';
+                    width = split;
+                }
+            }
+
+            while (width > 0 &&
+                   wrapped[width - 1] == ' ')
+            {
+                wrapped[--width] = '\0';
+            }
+
+            if (line_count < 512)
+            {
+                snprintf(
+                    lines[line_count],
+                    sizeof(lines[line_count]),
+                    "%s\r\n",
+                    wrapped
+                );
+
+                line_count++;
+            }
+
+            if (*word == '\n')
+                break;
+        }
+
+        /*
+         * Preserve paragraph breaks.
+         */
+        if (line_count < 512)
+        {
+            if (input[0] == '\n' ||
+                input[0] == '\r')
+            {
+                snprintf(
+                    lines[line_count],
+                    sizeof(lines[line_count]),
+                    "\r\n"
+                );
+
+                line_count++;
+            }
+        }
+    }
+
+    fclose(fp);
+
+    if (line_count == 0)
+    {
+        send_text(
+            client_fd,
+            "\r\n"
+            "Article is empty.\r\n"
+        );
+
+        return;
+    }
+
+    while (1)
+    {
+        int start =
+            page * NPR_LAN_LINES_PER_PAGE;
+
+        int end =
+            start + NPR_LAN_LINES_PER_PAGE;
+
+        if (end > line_count)
+            end = line_count;
+
+        send_text(
+            client_fd,
+            "\r\n"
+            "WIKIPEDIA ARTICLE\r\n"
+            "=================\r\n"
+            "\r\n"
+        );
+
+        for (int i = start; i < end; i++)
+            send_text(client_fd, lines[i]);
+
+        send_text(
+            client_fd,
+            "\r\n"
+            "N=Next  P=Previous  Q=Back\r\n"
+        );
+
+        char input_command[32];
+
+        if (!receive_line(
+                client_fd,
+                input_command,
+                sizeof(input_command)))
+        {
+            return;
+        }
+
+        if (input_command[0] == '\0')
+            return;
+
+        char command =
+            (char)tolower(
+                (unsigned char)input_command[0]);
+
+        if (command == 'q')
+            return;
+
+        if (command == 'n')
+        {
+            if (end < line_count)
+                page++;
+
+            continue;
+        }
+
+        if (command == 'p')
+        {
+            if (page > 0)
+                page--;
+
+            continue;
+        }
+
+        send_text(
+            client_fd,
+            "\r\n"
+            "Enter N, P, or Q.\r\n"
+        );
+    }
+}
+
+static void send_wikipedia(int client_fd)
+{
+    char article[256];
+
+    send_text(
+        client_fd,
+        "\r\n"
+        "WIKIPEDIA\r\n"
+        "==========\r\n"
+        "\r\n"
+        "Enter article name:\r\n"
+        "> "
+    );
+
+    if (!receive_line(
+            client_fd,
+            article,
+            sizeof(article)))
+    {
+        return;
+    }
+
+    if (article[0] == '\0')
+        return;
+
+    send_text(
+        client_fd,
+        "\r\n"
+        "Fetching Wikipedia article...\r\n"
+    );
+
+    if (wikipedia_fetch_article(article) != 0)
+    {
+        send_text(
+            client_fd,
+            "\r\n"
+            "Unable to retrieve Wikipedia article.\r\n"
+        );
+
+        return;
+    }
+
+    send_wikipedia_article(client_fd);
+}
+
+static void send_wiktionary_entry(int client_fd)
+{
+    FILE *fp;
+
+    char lines[512][82];
+    int line_count = 0;
+    int page = 0;
+
+    fp = fopen("/tmp/powertools-wiktionary.txt", "r");
+
+    if (fp == NULL)
+    {
+        send_text(
+            client_fd,
+            "\r\n"
+            "Unable to open Wiktionary entry.\r\n"
+        );
+
+        return;
+    }
+
+    /*
+     * Read the entry and wrap it to fit the
+     * Brother's 80-column display.
+     */
+    char input[512];
+
+    while (fgets(input, sizeof(input), fp) != NULL)
+    {
+        char *word = input;
+
+        while (*word != '\0')
+        {
+            while (*word == ' ' || *word == '\t')
+                word++;
+
+            if (*word == '\0' || *word == '\n')
+                break;
+
+            char wrapped[80];
+            int width = 0;
+
+            while (*word != '\0' &&
+                   *word != '\n' &&
+                   width < 76)
+            {
+                if (*word == ' ')
+                {
+                    char *next = word + 1;
+
+                    while (*next == ' ')
+                        next++;
+
+                    if (*next == '\0' ||
+                        *next == '\n')
+                    {
+                        word = next;
+                        break;
+                    }
+                }
+
+                wrapped[width++] = *word;
+                word++;
+            }
+
+            wrapped[width] = '\0';
+
+            /*
+             * If we stopped in the middle of a word,
+             * back up to the last space.
+             */
+            if (*word != '\0' &&
+                *word != '\n' &&
+                width >= 76)
+            {
+                int split = width - 1;
+
+                while (split >= 0 &&
+                       wrapped[split] != ' ')
+                {
+                    split--;
+                }
+
+                if (split > 0)
+                {
+                    word -= width - split - 1;
+                    wrapped[split] = '\0';
+                    width = split;
+                }
+            }
+
+            while (width > 0 &&
+                   wrapped[width - 1] == ' ')
+            {
+                wrapped[--width] = '\0';
+            }
+
+            if (line_count < 512)
+            {
+                snprintf(
+                    lines[line_count],
+                    sizeof(lines[line_count]),
+                    "%s\r\n",
+                    wrapped
+                );
+
+                line_count++;
+            }
+
+            if (*word == '\n')
+                break;
+        }
+
+        /*
+         * Preserve paragraph breaks.
+         */
+        if (line_count < 512)
+        {
+            if (input[0] == '\n' ||
+                input[0] == '\r')
+            {
+                snprintf(
+                    lines[line_count],
+                    sizeof(lines[line_count]),
+                    "\r\n"
+                );
+
+                line_count++;
+            }
+        }
+    }
+
+    fclose(fp);
+
+    if (line_count == 0)
+    {
+        send_text(
+            client_fd,
+            "\r\n"
+            "Entry is empty.\r\n"
+        );
+
+        return;
+    }
+
+    while (1)
+    {
+        int start =
+            page * NPR_LAN_LINES_PER_PAGE;
+
+        int end =
+            start + NPR_LAN_LINES_PER_PAGE;
+
+        if (end > line_count)
+            end = line_count;
+
+        send_text(
+            client_fd,
+            "\r\n"
+            "WIKTIONARY ENTRY\r\n"
+            "================\r\n"
+            "\r\n"
+        );
+
+        for (int i = start; i < end; i++)
+            send_text(client_fd, lines[i]);
+
+        send_text(
+            client_fd,
+            "\r\n"
+            "N=Next  P=Previous  Q=Back\r\n"
+        );
+
+        char input_command[32];
+
+        if (!receive_line(
+                client_fd,
+                input_command,
+                sizeof(input_command)))
+        {
+            return;
+        }
+
+        if (input_command[0] == '\0')
+            return;
+
+        char command =
+            (char)tolower(
+                (unsigned char)input_command[0]);
+
+        if (command == 'q')
+            return;
+
+        if (command == 'n')
+        {
+            if (end < line_count)
+                page++;
+
+            continue;
+        }
+
+        if (command == 'p')
+        {
+            if (page > 0)
+                page--;
+
+            continue;
+        }
+
+        send_text(
+            client_fd,
+            "\r\n"
+            "Enter N, P, or Q.\r\n"
+        );
+    }
+}
+
+static void send_wiktionary(int client_fd)
+{
+    char word[256];
+
+    send_text(
+        client_fd,
+        "\r\n"
+        "WIKTIONARY\r\n"
+        "===========\r\n"
+        "\r\n"
+        "Enter word:\r\n"
+        "> "
+    );
+
+    if (!receive_line(
+            client_fd,
+            word,
+            sizeof(word)))
+    {
+        return;
+    }
+
+    if (word[0] == '\0')
+        return;
+
+    send_text(
+        client_fd,
+        "\r\n"
+        "Fetching Wiktionary entry...\r\n"
+    );
+
+    if (wiktionary_fetch_entry(word) != 0)
+    {
+        send_text(
+            client_fd,
+            "\r\n"
+            "Unable to retrieve Wiktionary entry.\r\n"
+        );
+
+        return;
+    }
+
+    send_wiktionary_entry(client_fd);
+}
+
 static void send_npr_article(int client_fd)
 {
     FILE *fp;
@@ -2147,15 +2673,13 @@ case '2':
                           "\r\nNotes selected.\r\n");
                 break;
 
-            case '5':
-                send_text(client_fd,
-                          "\r\nWikipedia selected.\r\n");
-                break;
+case '5':
+    send_wikipedia(client_fd);
+    break;
 
-            case '6':
-                send_text(client_fd,
-                          "\r\nWiktionary selected.\r\n");
-                break;
+case '6':
+    send_wiktionary(client_fd);
+    break;
 
             case '7':
                 send_text(client_fd,

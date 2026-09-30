@@ -365,7 +365,89 @@ static int json_extract_definitions(const char *json, FILE *out)
 }
 
 
+int wiktionary_fetch_entry(const char *word)
+{
+    char command[1024];
+    FILE *fp;
+    FILE *out;
+    char *json;
+    long size;
+    size_t bytes_read;
+    int definitions;
 
+    if (word == NULL || word[0] == '\0')
+        return -1;
+
+    snprintf(
+        command,
+        sizeof(command),
+        "curl -s -L "
+        "'https://en.wiktionary.org/api/rest_v1/page/definition/%s' "
+        "> " JSON_FILE,
+        word
+    );
+
+    if (system(command) != 0)
+        return -1;
+
+    fp = fopen(JSON_FILE, "rb");
+
+    if (fp == NULL)
+        return -1;
+
+    fseek(fp, 0, SEEK_END);
+    size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    if (size <= 0 || size >= MAX_JSON_SIZE)
+    {
+        fclose(fp);
+        return -1;
+    }
+
+    json = malloc((size_t)size + 1);
+
+    if (json == NULL)
+    {
+        fclose(fp);
+        return -1;
+    }
+
+    bytes_read =
+        fread(json, 1, (size_t)size, fp);
+
+    fclose(fp);
+
+    json[bytes_read] = '\0';
+
+    out = fopen(TEXT_FILE, "w");
+
+    if (out == NULL)
+    {
+        free(json);
+        return -1;
+    }
+
+    fprintf(out, "%s\r\n\r\n", word);
+
+    definitions =
+        json_extract_definitions(json, out);
+
+    fprintf(out, "Source:\r\n");
+    fprintf(
+        out,
+        "https://en.wiktionary.org/wiki/%s\r\n",
+        word
+    );
+
+    fclose(out);
+    free(json);
+
+    if (definitions <= 0)
+        return -1;
+
+    return 0;
+}
 
 /*
  * Fetch and display a Wiktionary entry.

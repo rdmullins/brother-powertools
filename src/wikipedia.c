@@ -197,6 +197,63 @@ static int json_extract_text(const char *input, const char *output)
     return in_extract ? 0 : -1;
 }
 
+int wikipedia_fetch_article(const char *article)
+{
+    char encoded_article[256];
+    char url[768];
+    char command[1024];
+
+    if (article == NULL || article[0] == '\0')
+        return -1;
+
+    /*
+     * Wikipedia accepts underscores in page titles.
+     * Convert spaces for the LAN interface.
+     */
+    snprintf(
+        encoded_article,
+        sizeof(encoded_article),
+        "%s",
+        article
+    );
+
+    for (char *p = encoded_article; *p != '\0'; p++)
+    {
+        if (*p == ' ')
+            *p = '_';
+    }
+
+    snprintf(
+        url,
+        sizeof(url),
+        WIKIPEDIA_API_URL,
+        encoded_article
+    );
+
+    snprintf(
+        command,
+        sizeof(command),
+        "curl -L -s '%s' -o '%s'",
+        url,
+        WIKIPEDIA_JSON_FILE
+    );
+
+    if (system(command) != 0)
+        return -1;
+
+    if (json_extract_text(
+            WIKIPEDIA_JSON_FILE,
+            WIKIPEDIA_TEXT_FILE) != 0)
+    {
+        return -1;
+    }
+
+    if (get_file_size(WIKIPEDIA_TEXT_FILE) <= 0)
+        return -1;
+
+    return 0;
+}
+
 void wikipedia_lookup(void)
 {
     char article[256];
