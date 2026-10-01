@@ -1,10 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "games.h"
 #include "quiz_menu.h"
 
-void game_menu(void)
+void quiz_menu(void)
 {
     int choice;
 
@@ -13,15 +12,17 @@ void game_menu(void)
             "\n"
             "+---------------------------------------------+\n"
             "|              brother PowerTools             |\n"
-            "|                    Games                    |\n"
+            "|                     Quiz                    |\n"
             "+---------------------------------------------+\n"
-            "|  1. Adventure                               |\n"
-            "|  2. Star Trek                               |\n"
-            "|  3. Hunt the Wumpus                         |\n"
-            "|  4. Oregon Trail                            |\n"
-            "|  5. Zork                                    |\n"
-            "|  6. Quiz                                    |\n"
-            "|  7. Return to Main Menu                     |\n"
+            "|  1. State Capitals                          |\n"
+            "|  2. U.S. Presidents                         |\n"
+            "|  3. Star Trek                               |\n"
+            "|  4. Morse Code                              |\n"
+            "|  5. European Capitals                       |\n"
+            "|  6. Asian Capitals                          |\n"
+            "|  7. Shakespeare                             |\n"
+            "|  8. Middle-earth                            |\n"
+            "|  9. Return to Games                         |\n"
             "+---------------------------------------------+\n"
             "\n"
             "Enter your choice: "
@@ -40,30 +41,38 @@ void game_menu(void)
 
         switch (choice) {
             case 1:
-                system("adventure");
+                system("quiz state capital");
                 break;
 
             case 2:
-                system("$HOME/.local/bin/trek");
+                system("quiz president term");
                 break;
 
             case 3:
-                system("wump");
+                system("quiz star trek");
                 break;
 
             case 4:
-                system("$HOME/.local/bin/oregon-local");
+                system("quiz clear morse");
                 break;
 
             case 5:
-                system("/usr/games/dfrotz $HOME/Zork/Zork1.dat");
+                system("quiz european capital");
                 break;
 
             case 6:
-                quiz_menu();
+                system("quiz asian capital");
                 break;
 
             case 7:
+                system("quiz lines work");
+                break;
+
+            case 8:
+                system("quiz middle-earth capital");
+                break;
+
+            case 9:
                 return;
 
             default:

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <json-c/json.h>
 
 #include "wikipedia.h"
 #include "transfer.h"
@@ -11,11 +12,16 @@
 
 #define WIKIPEDIA_API_URL \
     "https://en.wikipedia.org/w/api.php?action=query" \
-    "&prop=extracts&explaintext=1&exsectionformat=wiki" \
+    "&prop=extracts|links" \
+    "&explaintext=1&exsectionformat=wiki" \
+    "&plnamespace=0" \
+    "&pllimit=100" \
     "&titles=%s&format=json"
 
 #define WIKIPEDIA_JSON_FILE "/tmp/powertools-wikipedia.json"
 #define WIKIPEDIA_TEXT_FILE "/tmp/powertools-wikipedia.txt"
+#define WIKIPEDIA_LINKS_JSON_FILE \
+    "/tmp/powertools-wikipedia-links.json"
 
 typedef struct {
     char prefix[512];
@@ -46,155 +52,276 @@ static long get_file_size(const char *filename)
     return size;
 }
 
-static int json_extract_text(const char *input, const char *output)
-{
-    FILE *source;
-    FILE *destination;
-    int c;
-    int in_extract = 0;
-    int escaped = 0;
+static void wikipedia_browse_links(const char *article);
 
-    source = fopen(input, "r");
-    if (source == NULL) {
-        perror("Unable to open Wikipedia API response");
+static int json_extract_text(
+    const char *input,
+    const char *output)
+{
+    FILE *destination;
+    json_object *root = NULL;
+    json_object *query = NULL;
+    json_object *pages = NULL;
+    json_object *page = NULL;
+    json_object *extract = NULL;
+
+    root = json_object_from_file(input);
+
+    if (root == NULL)
+        return -1;
+
+    if (!json_object_object_get_ex(
+            root,
+            "query",
+            &query))
+    {
+        json_object_put(root);
         return -1;
     }
 
-    destination = fopen(output, "w");
-    if (destination == NULL) {
-        perror("Unable to create Wikipedia text file");
-        fclose(source);
+    if (!json_object_object_get_ex(
+            query,
+            "pages",
+            &pages))
+    {
+        json_object_put(root);
         return -1;
     }
 
     /*
-     * Find the "extract" JSON property.
+     * Wikipedia uses the page ID as the key under
+     * "pages". We only need the first page returned.
      */
-    while ((c = fgetc(source)) != EOF) {
-        if (!in_extract) {
-            if (c == '"') {
-                char key[16];
-                int i = 0;
+    json_object_object_foreach(
+        pages,
+        page_id,
+        page_object)
+    {
+        (void)page_id;
 
-                while ((c = fgetc(source)) != EOF &&
-                       c != '"' &&
-                       i < (int)sizeof(key) - 1) {
-                    key[i++] = (char)c;
-                }
-
-                key[i] = '\0';
-
-                if (strcmp(key, "extract") == 0) {
-                    c = fgetc(source);
-
-                    while (c != EOF && c != ':') {
-                        c = fgetc(source);
-                    }
-
-                    if (c != EOF) {
-                        c = fgetc(source);
-
-                        while (c != EOF && c != '"') {
-                            c = fgetc(source);
-                        }
-
-                        if (c == '"') {
-                            in_extract = 1;
-                        }
-                    }
-                }
-            }
-        } else {
-            if (escaped) {
-                switch (c) {
-                    case '"':
-                        fputc('"', destination);
-                        break;
-
-                    case '\\':
-                        fputc('\\', destination);
-                        break;
-
-                    case '/':
-                        fputc('/', destination);
-                        break;
-
-                    case 'n':
-                        fputc('\n', destination);
-                        break;
-
-                    case 'r':
-                        break;
-
-                    case 't':
-                        fputc('\t', destination);
-                        break;
-
-                    case 'u': {
-                        char hex[5];
-                        char *end;
-                        unsigned long value;
-
-                        for (int i = 0; i < 4; i++) {
-                            c = fgetc(source);
-
-                            if (c == EOF) {
-                                fclose(destination);
-                                fclose(source);
-                                return -1;
-                            }
-
-                            hex[i] = (char)c;
-                        }
-
-                        hex[4] = '\0';
-
-                        value = strtoul(hex, &end, 16);
-
-                        if (end == hex + 4 && value <= 0x7f) {
-                            fputc((int)value, destination);
-                        } else if (end == hex + 4 &&
-                                   value >= 0x80 &&
-                                   value <= 0x7ff) {
-                            fputc(0xc0 | (value >> 6), destination);
-                            fputc(0x80 | (value & 0x3f), destination);
-                        } else if (end == hex + 4 &&
-                                   value >= 0x800 &&
-                                   value <= 0xffff) {
-                            fputc(0xe0 | (value >> 12), destination);
-                            fputc(0x80 | ((value >> 6) & 0x3f), destination);
-                            fputc(0x80 | (value & 0x3f), destination);
-                        }
-
-                        break;
-                    }
-
-                    default:
-                        fputc(c, destination);
-                        break;
-                }
-
-                escaped = 0;
-                continue;
-            }
-
-            if (c == '\\') {
-                escaped = 1;
-                continue;
-            }
-
-            if (c == '"') {
-                break;
-            }
-
-            fputc(c, destination);
-        }
+        page = page_object;
+        break;
     }
 
-    fclose(destination);
-    fclose(source);
+    if (page == NULL)
+    {
+        json_object_put(root);
+        return -1;
+    }
 
-    return in_extract ? 0 : -1;
+    if (!json_object_object_get_ex(
+            page,
+            "extract",
+            &extract))
+    {
+        json_object_put(root);
+        return -1;
+    }
+
+    const char *text =
+        json_object_get_string(extract);
+
+    if (text == NULL)
+    {
+        json_object_put(root);
+        return -1;
+    }
+
+    destination = fopen(output, "w");
+
+    if (destination == NULL)
+    {
+        json_object_put(root);
+        return -1;
+    }
+
+    fputs(text, destination);
+
+    fclose(destination);
+
+    json_object_put(root);
+
+    return 0;
+}
+
+static int json_extract_links(
+    const char *input,
+    WikipediaLink links[],
+    int max_links)
+{
+    json_object *root = NULL;
+    json_object *query = NULL;
+    json_object *pages = NULL;
+    json_object *page = NULL;
+    json_object *page_links = NULL;
+    json_object *link = NULL;
+    json_object *title = NULL;
+
+    if (input == NULL ||
+        links == NULL ||
+        max_links <= 0)
+    {
+        return -1;
+    }
+
+    root = json_object_from_file(input);
+
+    if (root == NULL)
+        return -1;
+
+    if (!json_object_object_get_ex(
+            root,
+            "query",
+            &query))
+    {
+        json_object_put(root);
+        return -1;
+    }
+
+    if (!json_object_object_get_ex(
+            query,
+            "pages",
+            &pages))
+    {
+        json_object_put(root);
+        return -1;
+    }
+
+    json_object_object_foreach(
+        pages,
+        page_id,
+        page_object)
+    {
+        (void)page_id;
+
+        page = page_object;
+        break;
+    }
+
+    if (page == NULL)
+    {
+        json_object_put(root);
+        return -1;
+    }
+
+    if (!json_object_object_get_ex(
+            page,
+            "links",
+            &page_links))
+    {
+        /*
+         * An article with no links is a valid result.
+         */
+        json_object_put(root);
+        return 0;
+    }
+
+    int link_count = 0;
+
+    int array_length =
+        json_object_array_length(page_links);
+
+    for (int i = 0;
+         i < array_length && link_count < max_links;
+         i++)
+    {
+        link = json_object_array_get_idx(
+            page_links,
+            i
+        );
+
+        if (link == NULL)
+            continue;
+
+        if (!json_object_object_get_ex(
+                link,
+                "title",
+                &title))
+        {
+            continue;
+        }
+
+        const char *link_title =
+            json_object_get_string(title);
+
+        if (link_title == NULL)
+            continue;
+
+        snprintf(
+            links[link_count].title,
+            sizeof(links[link_count].title),
+            "%s",
+            link_title
+        );
+
+        link_count++;
+    }
+
+    json_object_put(root);
+
+    return link_count;
+}
+
+static int json_extract_link_continuation(
+    const char *input,
+    char *continuation,
+    size_t continuation_size)
+{
+    json_object *root = NULL;
+    json_object *continue_object = NULL;
+    json_object *plcontinue = NULL;
+    const char *value;
+
+    if (input == NULL ||
+        continuation == NULL ||
+        continuation_size == 0)
+    {
+        return -1;
+    }
+
+    continuation[0] = '\0';
+
+    root = json_object_from_file(input);
+
+    if (root == NULL)
+        return -1;
+
+    if (!json_object_object_get_ex(
+            root,
+            "continue",
+            &continue_object))
+    {
+        json_object_put(root);
+        return 0;
+    }
+
+    if (!json_object_object_get_ex(
+            continue_object,
+            "plcontinue",
+            &plcontinue))
+    {
+        json_object_put(root);
+        return 0;
+    }
+
+    value = json_object_get_string(plcontinue);
+
+    if (value == NULL)
+    {
+        json_object_put(root);
+        return 0;
+    }
+
+    snprintf(
+        continuation,
+        continuation_size,
+        "%s",
+        value
+    );
+
+    json_object_put(root);
+
+    return 1;
 }
 
 int wikipedia_fetch_article(const char *article)
@@ -252,6 +379,316 @@ int wikipedia_fetch_article(const char *article)
         return -1;
 
     return 0;
+}
+
+static void wikipedia_url_encode(
+    const char *input,
+    char *output,
+    size_t output_size)
+{
+    static const char hex[] =
+        "0123456789ABCDEF";
+
+    size_t pos = 0;
+
+    while (*input != '\0' &&
+           pos + 4 < output_size)
+    {
+        unsigned char ch =
+            (unsigned char)*input++;
+
+        if (isalnum(ch) ||
+            ch == '-' ||
+            ch == '_' ||
+            ch == '.' ||
+            ch == '~')
+        {
+            output[pos++] = (char)ch;
+        }
+        else
+        {
+            output[pos++] = '%';
+            output[pos++] = hex[ch >> 4];
+            output[pos++] = hex[ch & 0x0F];
+        }
+    }
+
+    output[pos] = '\0';
+}
+
+static int wikipedia_fetch_more_links(
+    const char *article,
+    WikipediaLink links[],
+    int max_links,
+    int *link_count)
+{
+    char encoded_article[256];
+    char continuation[512];
+    char url[1024];
+    char command[1280];
+
+    if (article == NULL ||
+        links == NULL ||
+        link_count == NULL ||
+        max_links <= 0)
+    {
+        return -1;
+    }
+
+    snprintf(
+        encoded_article,
+        sizeof(encoded_article),
+        "%s",
+        article
+    );
+
+    for (char *p = encoded_article; *p != '\0'; p++)
+    {
+        if (*p == ' ')
+            *p = '_';
+    }
+
+    continuation[0] = '\0';
+
+    while (*link_count < max_links)
+    {
+        snprintf(
+            url,
+            sizeof(url),
+            "https://en.wikipedia.org/w/api.php"
+            "?action=query"
+            "&prop=links"
+            "&plnamespace=0"
+            "&pllimit=100"
+            "&titles=%s"
+            "&format=json",
+            encoded_article
+        );
+if (continuation[0] != '\0')
+{
+    char encoded_continuation[1024];
+
+    wikipedia_url_encode(
+        continuation,
+        encoded_continuation,
+        sizeof(encoded_continuation)
+    );
+
+    snprintf(
+        url + strlen(url),
+        sizeof(url) - strlen(url),
+        "&plcontinue=%s",
+        encoded_continuation
+    );
+}
+
+        snprintf(
+            command,
+            sizeof(command),
+            "curl -L -s '%s' -o '%s'",
+            url,
+            WIKIPEDIA_LINKS_JSON_FILE
+        );
+if (system(command) != 0)
+{
+    printf("\nLink curl failed.\n");
+    return -1;
+}
+
+        int old_count = *link_count;
+
+        int added =
+            json_extract_links(
+                WIKIPEDIA_LINKS_JSON_FILE,
+                links + *link_count,
+                max_links - *link_count
+            );
+if (added < 0)
+{
+    printf("\nLink JSON parsing failed.\n");
+    return -1;
+}
+
+        *link_count += added;
+
+        /*
+         * Get the continuation token for the next
+         * page of links.
+         */
+        int continuation_result =
+            json_extract_link_continuation(
+                WIKIPEDIA_LINKS_JSON_FILE,
+                continuation,
+                sizeof(continuation)
+            );
+
+if (continuation_result < 0)
+{
+    printf("\nContinuation parsing failed.\n");
+    return -1;
+}
+
+        /*
+         * No continuation means we have reached the
+         * end of the link list.
+         */
+        if (continuation_result == 0)
+            break;
+
+        /*
+         * Protect against a response that somehow
+         * gives us no new links.
+         */
+        if (*link_count == old_count)
+            break;
+    }
+
+    return 0;
+}
+
+int wikipedia_load_links(
+    const char *article,
+    WikipediaLink links[],
+    int max_links)
+{
+    int link_count = 0;
+
+    if (article == NULL ||
+        links == NULL ||
+        max_links <= 0)
+    {
+        return -1;
+    }
+
+    if (wikipedia_fetch_more_links(
+            article,
+            links,
+            max_links,
+            &link_count) != 0)
+    {
+        return -1;
+    }
+
+    return link_count;
+}
+
+static void wikipedia_browse_links(const char *article)
+{
+    WikipediaLink links[WIKIPEDIA_MAX_LINKS];
+    char input[32];
+    int link_count;
+    int page = 0;
+
+    link_count = wikipedia_load_links(
+        article,
+        links,
+        WIKIPEDIA_MAX_LINKS
+    );
+
+    if (link_count <= 0) {
+        printf("\nNo Wikipedia links found.\n");
+        printf("Press Enter to return...");
+        getchar();
+        return;
+    }
+
+    while (1) {
+        int start = page * 20;
+        int end = start + 20;
+
+        if (start >= link_count) {
+            page = 0;
+            continue;
+        }
+
+        if (end > link_count) {
+            end = link_count;
+        }
+
+        printf("\n");
+        printf("+---------------------------------------------+\n");
+        printf("|              Wikipedia Links                |\n");
+        printf("+---------------------------------------------+\n");
+        printf("\n");
+
+        for (int i = start; i < end; i++) {
+            printf("%2d. %s\n",
+                   i + 1,
+                   links[i].title);
+        }
+
+        printf("\n");
+        printf("N. Next page    P. Previous page\n");
+        printf("B. Back to article\n");
+        printf("\n");
+        printf("Enter link number or command: ");
+
+        if (fgets(input, sizeof(input), stdin) == NULL) {
+            return;
+        }
+
+        input[strcspn(input, "\n")] = '\0';
+
+        if (input[0] == '\0') {
+            continue;
+        }
+
+        if (input[0] == 'b' || input[0] == 'B') {
+            return;
+        }
+
+        if (input[0] == 'n' || input[0] == 'N') {
+            if (end < link_count) {
+                page++;
+            } else {
+                printf("\nAlready on the last page.\n");
+            }
+            continue;
+        }
+
+        if (input[0] == 'p' || input[0] == 'P') {
+            if (page > 0) {
+                page--;
+            } else {
+                printf("\nAlready on the first page.\n");
+            }
+            continue;
+        }
+
+        int choice = atoi(input);
+
+        if (choice >= 1 && choice <= link_count) {
+            printf("\nFetching %s...\n",
+                   links[choice - 1].title);
+
+            if (wikipedia_fetch_article(
+                    links[choice - 1].title) != 0) {
+                printf("Unable to retrieve article.\n");
+                printf("Press Enter to continue...");
+                getchar();
+                continue;
+            }
+
+            if (json_extract_text(
+                    WIKIPEDIA_JSON_FILE,
+                    WIKIPEDIA_TEXT_FILE) != 0) {
+                printf("Unable to extract article text.\n");
+                printf("Press Enter to continue...");
+                getchar();
+                continue;
+            }
+
+            view_text_file(WIKIPEDIA_TEXT_FILE);
+
+            /*
+             * After reading the linked article, return to the
+             * link list for the original article.
+             */
+            continue;
+        }
+
+        printf("\nInvalid selection.\n");
+    }
 }
 
 void wikipedia_lookup(void)
@@ -326,13 +763,16 @@ if (article_size < 0) {
     return;
 }
 
+while (1) {
+
 printf("\n");
 printf("Article retrieved successfully.\n");
 printf("Article size: %ld bytes\n", article_size);
 printf("\n");
 printf("1. Read on screen\n");
-printf("2. Send article to PowerNote\n");
-printf("3. Back\n");
+printf("2. Browse links\n");
+printf("3. Send article to PowerNote\n");
+printf("4. Back\n");
 printf("\n");
 printf("Enter your choice: ");
 
@@ -344,8 +784,9 @@ if (scanf("%d", &choice) != 1) {
     }
 
     printf("Invalid input.\n");
-    return;
+    break;
 }
+
 
 getchar();
 
@@ -355,7 +796,11 @@ getchar();
             view_text_file(WIKIPEDIA_TEXT_FILE);
             break;
 
-        case 2: {
+        case 2:
+            wikipedia_browse_links(article);
+            break;
+
+        case 3: {
         char part_filename[1024];
 
         printf("\n");
@@ -462,11 +907,11 @@ transfer.total_parts = parts;
         break;
     }
 
-    case 3:
+    case 4:
         return;
 
     default:
         printf("Invalid option.\n");
         return;
 }
-}
+}}

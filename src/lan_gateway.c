@@ -33,6 +33,10 @@ static void send_text(int client_fd, const char *text)
     send(client_fd, text, strlen(text), 0);
 }
 
+static void send_wikipedia_article(
+    int client_fd,
+    const char *article);
+
 static void send_weather_menu(int client_fd)
 {
     send_text(
@@ -1645,7 +1649,166 @@ static void library_menu(int client_fd)
     }
 }
 
-static void send_wikipedia_article(int client_fd)
+static void send_wikipedia_links(
+    int client_fd,
+    const char *article)
+{
+    WikipediaLink links[WIKIPEDIA_MAX_LINKS];
+
+    int link_count =
+        wikipedia_load_links(
+            article,
+            links,
+            WIKIPEDIA_MAX_LINKS
+        );
+
+    if (link_count <= 0)
+    {
+        send_text(
+            client_fd,
+            "\r\n"
+            "Unable to retrieve Wikipedia links.\r\n"
+        );
+
+        return;
+    }
+
+    int page = 0;
+
+    while (1)
+    {
+        int start =
+            page * NPR_LAN_LINES_PER_PAGE;
+
+        int end =
+            start + NPR_LAN_LINES_PER_PAGE;
+
+        if (end > link_count)
+            end = link_count;
+
+        send_text(
+            client_fd,
+            "\r\n"
+            "WIKIPEDIA LINKS\r\n"
+            "================\r\n"
+            "\r\n"
+        );
+
+        for (int i = start; i < end; i++)
+        {
+            char line[320];
+
+            snprintf(
+                line,
+                sizeof(line),
+                "%2d. %.70s\r\n",
+                i + 1,
+                links[i].title
+            );
+
+            send_text(client_fd, line);
+        }
+
+        send_text(
+            client_fd,
+            "\r\n"
+            "N=Next  P=Previous  B=Back\r\n"
+            "Enter Link Number: "
+        );
+
+        char input[32];
+
+        if (!receive_line(
+                client_fd,
+                input,
+                sizeof(input)))
+        {
+            return;
+        }
+
+        if (input[0] == '\0')
+            return;
+
+        char command =
+            (char)tolower(
+                (unsigned char)input[0]);
+
+        if (command == 'b')
+            return;
+
+        if (command == 'n')
+        {
+            if (end < link_count)
+                page++;
+
+            continue;
+        }
+
+        if (command == 'p')
+        {
+            if (page > 0)
+                page--;
+
+            continue;
+        }
+
+        if (command == 'l')
+{
+    send_wikipedia_links(
+        client_fd,
+        article
+    );
+
+    continue;
+}
+
+        int choice = atoi(input);
+
+        if (choice >= 1 &&
+            choice <= link_count)
+        {
+            send_text(
+                client_fd,
+                "\r\n"
+                "Fetching Wikipedia article...\r\n"
+            );
+
+            if (wikipedia_fetch_article(
+                    links[choice - 1].title) != 0)
+            {
+                send_text(
+                    client_fd,
+                    "\r\n"
+                    "Unable to retrieve Wikipedia article.\r\n"
+                );
+
+                continue;
+            }
+
+            /*
+             * The selected link is now the current
+             * article. Display it and return here
+             * when the article viewer exits.
+             */
+            send_wikipedia_article(
+                client_fd,
+                links[choice - 1].title
+            );
+
+            return;
+        }
+
+        send_text(
+            client_fd,
+            "\r\n"
+            "Enter a link number, N, P, or B.\r\n"
+        );
+    }
+}
+
+static void send_wikipedia_article(
+    int client_fd,
+    const char *article)
 {
     FILE *fp;
 
@@ -1815,7 +1978,7 @@ static void send_wikipedia_article(int client_fd)
         send_text(
             client_fd,
             "\r\n"
-            "N=Next  P=Previous  Q=Back\r\n"
+            "N=Next  P=Previous  L=Links  Q=Back\r\n"
         );
 
         char input_command[32];
@@ -1853,6 +2016,16 @@ static void send_wikipedia_article(int client_fd)
 
             continue;
         }
+
+        if (command == 'l')
+{
+    send_wikipedia_links(
+        client_fd,
+        article
+    );
+
+    continue;
+}
 
         send_text(
             client_fd,
@@ -1904,7 +2077,10 @@ static void send_wikipedia(int client_fd)
         return;
     }
 
-    send_wikipedia_article(client_fd);
+    send_wikipedia_article(
+    client_fd,
+    article
+);
 }
 
 static void send_wiktionary_entry(int client_fd)
