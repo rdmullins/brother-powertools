@@ -22,7 +22,9 @@ void quiz_menu(void)
             "|  6. Asian Capitals                          |\n"
             "|  7. Shakespeare                             |\n"
             "|  8. Middle-earth                            |\n"
-            "|  9. Return to Games                         |\n"
+            "|  9. Retrocomputing: Computer -> CPU         |\n"
+            "| 10. Retrocomputing: CPU -> Computer         |\n"
+            "| 11. Return to Games                         |\n"
             "+---------------------------------------------+\n"
             "\n"
             "Enter your choice: "
@@ -73,7 +75,15 @@ void quiz_menu(void)
                 break;
 
             case 9:
-                return;
+    system("quiz -i $HOME/brother-powertools/data/quiz/index computer cpu");
+    break;
+
+case 10:
+    system("quiz -i $HOME/brother-powertools/data/quiz/index cpu computer");
+    break;
+
+case 11:
+    return;
 
             default:
                 printf("Invalid option. Please try again.\n");
