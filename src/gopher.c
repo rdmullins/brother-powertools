@@ -12,7 +12,6 @@
 #define GOPHER_HOST "gopher.floodgap.com"
 #define GOPHER_PORT 70
 
-#define MAX_ENTRIES 100
 #define MAX_HISTORY 16
 #define MAX_TEXT_LINES 200
 
@@ -20,20 +19,6 @@
 #define PAGE_SIZE 12
 
 
-typedef struct {
-    char type;
-    char display[256];
-    char selector[512];
-    char host[256];
-    int port;
-} GopherEntry;
-
-
-typedef struct {
-    char host[256];
-    char selector[512];
-    int port;
-} GopherLocation;
 
 
 /* ---------------------------------------------------------
@@ -140,6 +125,13 @@ static char *fetch_gopher(const char *host,
     return response;
 }
 
+char *gopher_fetch(
+    const char *host,
+    int port,
+    const char *selector)
+{
+    return fetch_gopher(host, port, selector);
+}
 
 /* ---------------------------------------------------------
  * Parse a Gopher directory
@@ -253,6 +245,17 @@ static int parse_directory(char *response,
     return count;
 }
 
+int gopher_parse_directory(
+    char *response,
+    GopherEntry entries[],
+    int max_entries)
+{
+    return parse_directory(
+        response,
+        entries,
+        max_entries
+    );
+}
 
 /* ---------------------------------------------------------
  * Display a directory
@@ -361,7 +364,7 @@ void gopher_menu(void)
 
     while (1) {
         char *response;
-        GopherEntry entries[MAX_ENTRIES];
+        GopherEntry entries[GOPHER_MAX_ENTRIES];
         int entry_count;
         int page = 0;
         char input[32];
@@ -396,7 +399,7 @@ void gopher_menu(void)
 
         entry_count = parse_directory(response,
                                       entries,
-                                      MAX_ENTRIES);
+                                      GOPHER_MAX_ENTRIES);
 
         free(response);
 

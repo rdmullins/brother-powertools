@@ -16,13 +16,13 @@
 - [x] Wiktionary
 - [x] Internet History Sourcebook
 - [ ] Are there any libraries that still have text-only catalog lookup?
-- [ ] How to add text-only web sites like NPR and BBC news
+- [x] How to add text-only web sites like NPR and BBC news
 - [ ] Email attachments (at least text)
 - [ ] Email signature file
 - [ ] Is it possible to reverse engineer the disk apps that came with the brother?
 - [ ] Any government databases? Congressional record, etc.?
-- [ ] Could we make a weather widget?
-- [ ] Stock widget?
-- [ ] Build wifi modem
-- [ ] Expose Linux connection for wifi modem use
-- [ ] Add read-on-screen (and search) to Gutenberg books
+- [x] Could we make a weather widget?
+- [x] Stock widget?
+- [x] Build wifi modem
+- [x] Expose Linux connection for wifi modem use
+- [x] Add read-on-screen (and search) to Gutenberg books

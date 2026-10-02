@@ -17,6 +17,7 @@
 #include "bibliography.h"
 #include "notes.h"
 #include "openlibrary.h"
+#include "gopher.h"
 
 #define BUFFER_SIZE 256
 #define NPR_LAN_STORIES_PER_PAGE 5
@@ -32,6 +33,409 @@ static void send_text(int client_fd, const char *text)
 {
     send(client_fd, text, strlen(text), 0);
 }
+
+static int receive_line(
+    int client_fd,
+    char *line,
+    size_t size);
+
+static void send_gopher(int client_fd)
+{
+    GopherLocation current;
+    GopherLocation history[16];
+    int history_count = 0;
+
+    strcpy(current.host, "gopher.floodgap.com");
+    strcpy(current.selector, "");
+    current.port = 70;
+
+    while (1)
+    {
+        char *response;
+        GopherEntry entries[GOPHER_MAX_ENTRIES];
+        int entry_count;
+
+        response = gopher_fetch(
+            current.host,
+            current.port,
+            current.selector
+        );
+
+        if (response == NULL)
+        {
+            send_text(
+                client_fd,
+                "\r\n"
+                "Unable to connect to Gopher server.\r\n"
+                "\r\n"
+                "Press Enter to return...\r\n"
+            );
+
+            return;
+        }
+
+        /*
+         * A directory response contains tab-delimited
+         * Gopher menu records.
+         */
+        if (strchr(response, '\t') == NULL)
+        {
+            send_text(
+                client_fd,
+                "\r\n"
+                "GOPHER DOCUMENT\r\n"
+                "===============\r\n"
+                "\r\n"
+            );
+
+            send_text(client_fd, response);
+            send_text(
+                client_fd,
+                "\r\n"
+                "\r\n"
+                "Press Enter to return...\r\n"
+            );
+
+            free(response);
+            return;
+        }
+
+        entry_count = gopher_parse_directory(
+            response,
+            entries,
+            GOPHER_MAX_ENTRIES
+        );
+
+        free(response);
+
+        if (entry_count <= 0)
+        {
+            send_text(
+                client_fd,
+                "\r\n"
+                "No Gopher menu entries found.\r\n"
+            );
+
+            return;
+        }
+
+        int page = 0;
+
+        while (1)
+        {
+            int start = page * 11;
+            int end = start + 11;
+
+            if (end > entry_count)
+                end = entry_count;
+
+            send_text(
+                client_fd,
+                "\r\n"
+                "GOPHER\r\n"
+                "======\r\n"
+                "\r\n"
+            );
+
+            for (int i = start; i < end; i++)
+            {
+                char line[384];
+                char marker = ' ';
+
+                if (entries[i].type == '1')
+                    marker = '>';
+                else if (entries[i].type == '0')
+                    marker = '#';
+                else if (entries[i].type == '7')
+                    marker = '?';
+
+                snprintf(
+                    line,
+                    sizeof(line),
+                    "%2d. %c %.70s\r\n",
+                    i + 1,
+                    marker,
+                    entries[i].display
+                );
+
+                send_text(client_fd, line);
+            }
+
+            send_text(client_fd, "\r\n");
+
+            if (end < entry_count)
+            {
+                send_text(
+                    client_fd,
+                    "N=Next  P=Previous  B=Back  Q=Quit\r\n"
+                );
+            }
+            else
+            {
+                send_text(
+                    client_fd,
+                    "P=Previous  B=Back  Q=Quit\r\n"
+                );
+            }
+
+            send_text(client_fd, "Selection: ");
+
+            char input[32];
+
+            if (!receive_line(
+                    client_fd,
+                    input,
+                    sizeof(input)))
+            {
+                return;
+            }
+
+            if (input[0] == 'q' || input[0] == 'Q')
+            {
+                return;
+            }
+
+            if (input[0] == 'n' || input[0] == 'N')
+            {
+                if (end < entry_count)
+                    page++;
+
+                continue;
+            }
+
+            if (input[0] == 'p' || input[0] == 'P')
+            {
+                if (page > 0)
+                    page--;
+
+                continue;
+            }
+
+            if (input[0] == 'b' || input[0] == 'B')
+            {
+                if (history_count == 0)
+                    return;
+
+                current = history[--history_count];
+                break;
+            }
+
+            int choice = atoi(input);
+
+            if (choice < 1 || choice > entry_count)
+            {
+                send_text(
+                    client_fd,
+                    "\r\nInvalid selection.\r\n"
+                );
+
+                continue;
+            }
+
+            GopherEntry *entry = &entries[choice - 1];
+
+            /*
+             * Text document.
+             */
+            if (entry->type == '0')
+            {
+                char *text;
+
+                send_text(
+                    client_fd,
+                    "\r\n"
+                    "Fetching document...\r\n"
+                );
+
+                text = gopher_fetch(
+                    entry->host,
+                    entry->port,
+                    entry->selector
+                );
+
+                if (text == NULL)
+                {
+                    send_text(
+                        client_fd,
+                        "\r\n"
+                        "Unable to retrieve document.\r\n"
+                    );
+
+                    continue;
+                }
+
+                send_text(
+                    client_fd,
+                    "\r\n"
+                    "GOPHER DOCUMENT\r\n"
+                    "===============\r\n"
+                    "\r\n"
+                );
+
+                send_text(client_fd, text);
+                send_text(
+                    client_fd,
+                    "\r\n"
+                    "\r\n"
+                    "Press Enter to return..."
+                );
+
+                free(text);
+
+                /*
+                 * Wait for the Brother before redrawing
+                 * the Gopher menu.
+                 */
+                if (!receive_line(
+                        client_fd,
+                        input,
+                        sizeof(input)))
+                {
+                    return;
+                }
+
+                continue;
+            }
+
+            /*
+             * Directory.
+             */
+            if (entry->type == '1')
+            {
+                if (history_count >= 16)
+                {
+                    send_text(
+                        client_fd,
+                        "\r\n"
+                        "Gopher history is full.\r\n"
+                    );
+
+                    continue;
+                }
+
+                history[history_count++] = current;
+
+                snprintf(
+                    current.host,
+                    sizeof(current.host),
+                    "%s",
+                    entry->host
+                );
+
+                snprintf(
+                    current.selector,
+                    sizeof(current.selector),
+                    "%s",
+                    entry->selector
+                );
+
+                current.port = entry->port;
+
+                break;
+            }
+
+            /*
+             * Gopher search/index.
+             */
+            if (entry->type == '7')
+            {
+                char query[256];
+
+                send_text(
+                    client_fd,
+                    "\r\n"
+                    "Search Gopher\r\n"
+                    "--------------\r\n"
+                    "Search term: "
+                );
+
+                if (!receive_line(
+                        client_fd,
+                        query,
+                        sizeof(query)))
+                {
+                    return;
+                }
+
+                if (query[0] == '\0')
+                    continue;
+
+                if (history_count >= 16)
+                {
+                    send_text(
+                        client_fd,
+                        "\r\n"
+                        "Gopher history is full.\r\n"
+                    );
+
+                    continue;
+                }
+
+                size_t selector_len =
+                    strlen(entry->selector);
+
+                size_t query_len =
+                    strlen(query);
+
+                if (selector_len +
+                    query_len +
+                    2 >
+                    sizeof(current.selector))
+                {
+                    send_text(
+                        client_fd,
+                        "\r\n"
+                        "Search query is too long.\r\n"
+                    );
+
+                    continue;
+                }
+
+                history[history_count++] = current;
+
+                snprintf(
+                    current.host,
+                    sizeof(current.host),
+                    "%s",
+                    entry->host
+                );
+
+                memcpy(
+                    current.selector,
+                    entry->selector,
+                    selector_len
+                );
+
+                current.selector[selector_len] = '?';
+
+                memcpy(
+                    current.selector + selector_len + 1,
+                    query,
+                    query_len
+                );
+
+                current.selector[
+                    selector_len + query_len + 1
+                ] = '\0';
+
+                current.port = entry->port;
+
+                break;
+            }
+
+            send_text(
+                client_fd,
+                "\r\n"
+                "Unsupported Gopher item type.\r\n"
+            );
+        }
+    }
+}
+
+static int receive_line(
+    int client_fd,
+    char *line,
+    size_t size);
 
 static void send_wikipedia_article(
     int client_fd,
@@ -68,13 +472,16 @@ static void send_menu(int client_fd)
         "5. Wikipedia\r\n"
         "6. Wiktionary\r\n"
         "7. Gutenberg\r\n"
-        "8. Games\r\n"
+        "8. Gopher\r\n"
+        "9. Games\r\n"
         "\r\n"
         "Q. Disconnect\r\n"
         "\r\n"
         "Selection: "
     );
 }
+
+static void send_gopher(int client_fd);
 
 static int receive_line(int client_fd, char *line, size_t size)
 {
@@ -2858,14 +3265,18 @@ case '6':
     break;
 
             case '7':
-                send_text(client_fd,
-                          "\r\nGutenberg selected.\r\n");
-                break;
+    send_text(client_fd,
+              "\r\nGutenberg selected.\r\n");
+    break;
 
-            case '8':
-                send_text(client_fd,
-                          "\r\nGames selected.\r\n");
-                break;
+case '8':
+    send_gopher(client_fd);
+    break;
+
+case '9':
+    send_text(client_fd,
+              "\r\nGames selected.\r\n");
+    break;
 
             case 'q':
             case 'Q':
