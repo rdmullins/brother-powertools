@@ -47,3 +47,52 @@ LOCATOR=Test
 USE=Testing
 TEXT=This is a test note from the remote Brother terminal connected via wifi modem to the Linux host.
 ---
+ID=NC000057
+BIB_ID=BC000007
+TITLE=Lehrer Not Subject to "-isms"
+LOCATOR=von Drehle, David
+USE=Background, Retrospective (Long Form Obit)
+TEXT="Born in 1928, he was too young to fight in World War II, but not too young to learn from that catastrophe that human naure can be dangerous. With World War III menacing just around the corner, Lehrer was not going to let any -isms - nationalism, patriotism, imperialism, fascism, communism - sweep him along as they swept previous generations."
+---
+ID=NC000058
+BIB_ID=BC000007
+TITLE=Juxtaposition of Content and Form
+LOCATOR=von Drehle, David
+USE=Background, Retrospective (Long form obit)
+TEXT="As the 1960s took shape, his ever-cheerful piano contrasted with increasingly pointed lyrics - always rendered in delightful, virtuosic rhymes."
+---
+ID=NC000059
+BIB_ID=BC000008
+TITLE=TL Appeal to Academic Audiences (pt. 1)
+LOCATOR=Arthur, Nicole
+USE=Retrospective/Legacy (Long Form Obit)
+TEXT="His astute social commentary, verbal dexterity and often academic subject matter differentiated him for mere novelty acts."
+---
+ID=NC000060
+BIB_ID=BC000008
+TITLE=TL Appeal to Academic Audience (pt 2)
+LOCATOR=Arthur, Nicole
+USE=Retrospective/Legacy (long form obit)
+TEXT="It's easy to imagine why Mr. Lehrer, at once brainy and naughty, appealed to collegiate audiences - he once rhymed 'philately' and 'Lady Chatterly' - but harder to imagine the shock value that his lyrics, be they sacrilegious, suggestive or just plain perverse, must have had at the time."
+---
+ID=NC000061
+BIB_ID=BC000009
+TITLE=TL "Celebrated by the cognescenti"
+LOCATOR=Larman, Alexander
+USE=Retrospective/Legacy (Long form obit)
+TEXT=Larman writes that "Lehrer was at least celebrated in his own time by the cognoscenti," adding that his songs "represented an edgier black humour that played well wit its university educated, literate audiences, of boundaries being transgressed."
+---
+ID=NC000062
+BIB_ID=BC000009
+TITLE=WWAGTWWG Evolution in Meaning
+LOCATOR=Larman, Alexander
+USE=Retrospective/Legacy (Long form obit)
+TEXT="When he wrote We Will All Go Together When We Go in 1959, it might have been seen as a commentary on the American way of death. However, with the impending spectre of nuclear war, it sooon became clear that such lyrics as 'we will all fry together when we fry/we'll be French fried potatoes by and by' were not simply wry observation but instead commentary on the rapidly accelerating atomic age."
+---
+ID=NC000063
+BIB_ID=BC000010
+TITLE=TL Hits Number 1 on Billboard Chart at Age 82
+LOCATOR=Billboard
+USE=Lasting Legacy
+TEXT=Five decades after he walked away from his music 'career,' Tom Lehrer hit number one on the Top Comedy Albums chart in Billboard when Shout Factory released his first hits compilation.
+---
