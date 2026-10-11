@@ -8,6 +8,7 @@
 #include "sourcebooks.h"
 #include "npr.h"
 #include "gopher.h"
+#include "infokat.h"
 
 
 /* ---------------------------------------------------------
@@ -91,9 +92,10 @@ void internet_menu(void)
             "|  3. Project Gutenberg                       |\n"
             "|  4. Internet History Sourcebooks            |\n"
             "|  5. NPR News                                |\n"
-            "|  6. Gopher                                   |\n"
-            "|  7. BBSes                                    |\n"
-            "|  8. Back                                     |\n"
+            "|  6. InfoKat (UK Library Catalog)             |\n"
+            "|  7. Gopher                                   |\n"
+            "|  8. BBSes                                    |\n"
+            "|  9. Back                                     |\n"
             "+---------------------------------------------+\n"
             "\n"
             "Enter your choice: "
@@ -134,14 +136,18 @@ void internet_menu(void)
                 break;
 
             case 6:
-                gopher_menu();
+                infokat_lookup();
                 break;
 
             case 7:
-                bbs_menu();
+                gopher_menu();
                 break;
 
             case 8:
+                bbs_menu();
+                break;
+
+            case 9:
                 return;
 
             default:
