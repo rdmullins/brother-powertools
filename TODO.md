@@ -26,3 +26,4 @@
 - [x] Build wifi modem
 - [x] Expose Linux connection for wifi modem use
 - [x] Add read-on-screen (and search) to Gutenberg books
+- [ ] Email Infokat record
