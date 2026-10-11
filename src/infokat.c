@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #include "infokat.h"
 
@@ -245,15 +246,18 @@ static void print_record(struct json_object *doc)
     }
 }
 
-static void show_results(struct json_object *json,
-                         const char *query,
-                         int offset,
-                         int total)
+/*
+ * Return 0 to leave, 1 for next page, 2 for previous page,
+ * or 3 to start a new search.
+ */
+static int show_results(struct json_object *json,
+                        const char *query,
+                        int offset,
+                        int total)
 {
     struct json_object *docs = member(json, "docs");
     int count = docs && json_object_is_type(docs, json_type_array)
         ? (int)json_object_array_length(docs) : 0;
-    int choice;
     int i;
     int page = offset / INFOKAT_PAGE_SIZE + 1;
     int pages = total > 0 ? (total + INFOKAT_PAGE_SIZE - 1) / INFOKAT_PAGE_SIZE : 1;
@@ -267,12 +271,11 @@ static void show_results(struct json_object *json,
         printf(" Results %d-%d of %d (page %d of %d)\n\n",
                count ? offset + 1 : 0, offset + count, total, page, pages);
 
-        if (count == 0) {
+        if (count == 0)
             printf("No results returned.\n");
-        }
 
         for (i = 0; i < count; i++) {
-            struct json_object *doc = json_object_array_get_idx(docs, i);
+            struct json_object *doc = json_object_array_get_idx(docs, (size_t)i);
             struct json_object *pnx = member(doc, "pnx");
             struct json_object *display = member(pnx, "display");
             struct json_object *addata = member(pnx, "addata");
@@ -289,46 +292,39 @@ static void show_results(struct json_object *json,
             if (year != NULL)
                 printf("  (%s)", year);
             putchar('\n');
-            if (library != NULL)
-                printf("    %.34s", library);
-            if (call != NULL)
-                printf("  %.30s", call);
-            if (library != NULL || call != NULL)
+            if (library != NULL || call != NULL) {
+                printf("    %.34s", library ? library : "");
+                if (call != NULL)
+                    printf("  %.30s", call);
                 putchar('\n');
+            }
         }
 
-        printf("\n");
-        printf("Enter 1-%d to view a record", count);
-        printf(" | N next | P previous | S new search | B back\n> ");
+        printf("\nEnter 1-%d to view a record | N next | P previous\n", count);
+        printf("S new search | B back\n> ");
 
         {
             char input[64];
             char *end;
-            long parsed;
+            long selected;
 
             if (fgets(input, sizeof(input), stdin) == NULL)
-                return;
+                return 0;
             input[strcspn(input, "\r\n")] = '\0';
 
             if (strcasecmp(input, "b") == 0 || strcasecmp(input, "q") == 0)
-                return;
-            if (strcasecmp(input, "s") == 0) {
-                printf("Enter new search: ");
-                if (fgets(input, sizeof(input), stdin) == NULL)
-                    return;
-                input[strcspn(input, "\r\n")] = '\0';
-                if (input[0] != '\0') {
-                    /* A special value signals the caller to start a new search. */
-                    strncpy((char *)query, input, 255);
-                }
-                return;
-            }
-            if (strcasecmp(input, "n") == 0 || strcasecmp(input, "p") == 0)
-                return;
+                return 0;
+            if (strcasecmp(input, "n") == 0)
+                return 1;
+            if (strcasecmp(input, "p") == 0)
+                return 2;
+            if (strcasecmp(input, "s") == 0)
+                return 3;
 
-            parsed = strtol(input, &end, 10);
-            if (end != input && *end == '\0' && parsed >= 1 && parsed <= count) {
-                print_record(json_object_array_get_idx(docs, (size_t)parsed - 1));
+            selected = strtol(input, &end, 10);
+            if (end != input && *end == '\0' &&
+                selected >= 1 && selected <= count) {
+                print_record(json_object_array_get_idx(docs, (size_t)selected - 1));
             } else {
                 printf("Invalid selection.\n");
             }
@@ -340,8 +336,6 @@ void infokat_lookup(void)
 {
     char query[256];
     int offset = 0;
-    int total = 0;
-    int action = 0;
 
     printf("\nInfoKat — University of Kentucky Libraries\n");
     printf("Search by title, author, subject, or keyword.\n");
@@ -361,68 +355,53 @@ void infokat_lookup(void)
     while (1) {
         struct json_object *json = search_catalog(query, offset);
         struct json_object *info;
-        struct json_object *docs;
-        int count;
+        int total;
+        int action;
 
         if (json == NULL) {
             printf("\nUnable to retrieve InfoKat results.\n");
             printf("Press Enter to return...");
-            while (getchar() != '\n' && !feof(stdin)) {}
+            {
+                char discard[8];
+                (void)fgets(discard, sizeof(discard), stdin);
+            }
             break;
         }
 
         info = member(json, "info");
-        docs = member(json, "docs");
         total = info ? json_object_get_int(member(info, "total")) : 0;
-        count = docs && json_object_is_type(docs, json_type_array)
-            ? (int)json_object_array_length(docs) : 0;
 
         if (offset >= total && offset > 0) {
-            offset = ((total > 0 ? total - 1 : 0) / INFOKAT_PAGE_SIZE) * INFOKAT_PAGE_SIZE;
+            offset = total > 0
+                ? ((total - 1) / INFOKAT_PAGE_SIZE) * INFOKAT_PAGE_SIZE
+                : 0;
             json_object_put(json);
             continue;
         }
 
-        show_results(json, query, offset, total);
+        action = show_results(json, query, offset, total);
         json_object_put(json);
 
-        /*
-         * The results display accepts navigation/search commands. The next
-         * version will keep these as explicit actions; for now we prompt for
-         * the action after returning from the result list.
-         */
-        printf("\nN next page | P previous page | S new search | B back\n> ");
-        {
-            char input[64];
-            if (fgets(input, sizeof(input), stdin) == NULL)
+        if (action == 0)
+            break;
+        if (action == 1) {
+            if (offset + INFOKAT_PAGE_SIZE < total)
+                offset += INFOKAT_PAGE_SIZE;
+            else
+                printf("Already at the last page.\n");
+        } else if (action == 2) {
+            if (offset >= INFOKAT_PAGE_SIZE)
+                offset -= INFOKAT_PAGE_SIZE;
+            else
+                printf("Already at the first page.\n");
+        } else if (action == 3) {
+            printf("New search: ");
+            if (fgets(query, sizeof(query), stdin) == NULL)
                 break;
-            input[strcspn(input, "\r\n")] = '\0';
-
-            if (strcasecmp(input, "b") == 0 || strcasecmp(input, "q") == 0)
-                break;
-            if (strcasecmp(input, "n") == 0) {
-                if (offset + INFOKAT_PAGE_SIZE < total)
-                    offset += INFOKAT_PAGE_SIZE;
-                else
-                    printf("Already at the last page.\n");
-            } else if (strcasecmp(input, "p") == 0) {
-                if (offset >= INFOKAT_PAGE_SIZE)
-                    offset -= INFOKAT_PAGE_SIZE;
-                else
-                    printf("Already at the first page.\n");
-            } else if (strcasecmp(input, "s") == 0) {
-                printf("New search: ");
-                if (fgets(query, sizeof(query), stdin) == NULL)
-                    break;
-                query[strcspn(query, "\r\n")] = '\0';
-                if (query[0] != '\0')
-                    offset = 0;
-            } else {
-                printf("Returning to InfoKat search.\n");
-            }
+            query[strcspn(query, "\r\n")] = '\0';
+            if (query[0] != '\0')
+                offset = 0;
         }
-        (void)count;
-        (void)action;
     }
 
     curl_global_cleanup();
