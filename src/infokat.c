@@ -11,7 +11,7 @@
 #include "infokat.h"
 
 #define INFOKAT_ENDPOINT "https://saalck-uky.primo.exlibrisgroup.com/primaws/rest/pub/pnxs"
-#define INFOKAT_PAGE_SIZE 10
+#define INFOKAT_PAGE_SIZE 8
 #define INFOKAT_MAX_RESPONSE (2U * 1024U * 1024U)
 
 typedef struct {
