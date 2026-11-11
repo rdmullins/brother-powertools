@@ -18,6 +18,9 @@
     "&pllimit=100" \
     "&titles=%s&format=json"
 
+#define WIKIPEDIA_SEARCH_JSON_FILE \
+    "/tmp/powertools-wikipedia-search.json"
+
 #define WIKIPEDIA_JSON_FILE "/tmp/powertools-wikipedia.json"
 #define WIKIPEDIA_TEXT_FILE "/tmp/powertools-wikipedia.txt"
 #define WIKIPEDIA_LINKS_JSON_FILE \
@@ -324,31 +327,26 @@ static int json_extract_link_continuation(
     return 1;
 }
 
+static void wikipedia_url_encode(
+    const char *input,
+    char *output,
+    size_t output_size);
+
+
 int wikipedia_fetch_article(const char *article)
 {
-    char encoded_article[256];
-    char url[768];
-    char command[1024];
+    char encoded_article[768];
+    char url[1536];
+    char command[2048];
 
     if (article == NULL || article[0] == '\0')
         return -1;
 
-    /*
-     * Wikipedia accepts underscores in page titles.
-     * Convert spaces for the LAN interface.
-     */
-    snprintf(
+    wikipedia_url_encode(
+        article,
         encoded_article,
-        sizeof(encoded_article),
-        "%s",
-        article
+        sizeof(encoded_article)
     );
-
-    for (char *p = encoded_article; *p != '\0'; p++)
-    {
-        if (*p == ' ')
-            *p = '_';
-    }
 
     snprintf(
         url,
@@ -380,6 +378,7 @@ int wikipedia_fetch_article(const char *article)
 
     return 0;
 }
+
 
 static void wikipedia_url_encode(
     const char *input,
@@ -415,6 +414,229 @@ static void wikipedia_url_encode(
 
     output[pos] = '\0';
 }
+
+
+/*
+ * Remove HTML tags from Wikipedia search snippets.
+ * The API wraps matching words in HTML span elements.
+ */
+static void wikipedia_strip_html(
+    const char *input,
+    char *output,
+    size_t output_size)
+{
+    int in_tag = 0;
+    size_t pos = 0;
+
+    if (input == NULL ||
+        output == NULL ||
+        output_size == 0)
+    {
+        return;
+    }
+
+    for (size_t i = 0;
+         input[i] != '\0' && pos < output_size - 1;
+         i++)
+    {
+        if (input[i] == '<')
+        {
+            in_tag = 1;
+            continue;
+        }
+
+        if (input[i] == '>')
+        {
+            in_tag = 0;
+
+            if (pos > 0 && output[pos - 1] != ' ')
+                output[pos++] = ' ';
+
+            continue;
+        }
+
+        if (!in_tag)
+        {
+            unsigned char ch = (unsigned char)input[i];
+
+            if (isspace(ch))
+            {
+                if (pos > 0 && output[pos - 1] != ' ')
+                    output[pos++] = ' ';
+            }
+            else
+            {
+                output[pos++] = (char)ch;
+            }
+        }
+    }
+
+    if (pos > 0 && output[pos - 1] == ' ')
+        pos--;
+
+    output[pos] = '\0';
+}
+
+
+/*
+ * Extract Wikipedia search results from JSON.
+ */
+static int json_extract_search_results(
+    const char *input,
+    WikipediaSearchResult results[],
+    int max_results)
+{
+    json_object *root = NULL;
+    json_object *query = NULL;
+    json_object *search = NULL;
+    json_object *item = NULL;
+    json_object *title = NULL;
+    json_object *snippet = NULL;
+
+    if (input == NULL ||
+        results == NULL ||
+        max_results <= 0)
+    {
+        return -1;
+    }
+
+    root = json_object_from_file(input);
+
+    if (root == NULL)
+        return -1;
+
+    if (!json_object_object_get_ex(
+            root, "query", &query))
+    {
+        json_object_put(root);
+        return -1;
+    }
+
+    if (!json_object_object_get_ex(
+            query, "search", &search))
+    {
+        json_object_put(root);
+        return -1;
+    }
+
+    int result_count = 0;
+
+    int array_length =
+        json_object_array_length(search);
+
+    for (int i = 0;
+         i < array_length && result_count < max_results;
+         i++)
+    {
+        item = json_object_array_get_idx(search, i);
+
+        if (item == NULL)
+            continue;
+
+        if (!json_object_object_get_ex(
+                item, "title", &title))
+        {
+            continue;
+        }
+
+        const char *result_title =
+            json_object_get_string(title);
+
+        if (result_title == NULL)
+            continue;
+
+        snprintf(
+            results[result_count].title,
+            sizeof(results[result_count].title),
+            "%s",
+            result_title
+        );
+
+        results[result_count].snippet[0] = '\0';
+
+        if (json_object_object_get_ex(
+                item, "snippet", &snippet))
+        {
+            const char *result_snippet =
+                json_object_get_string(snippet);
+
+            if (result_snippet != NULL)
+            {
+                wikipedia_strip_html(
+                    result_snippet,
+                    results[result_count].snippet,
+                    sizeof(results[result_count].snippet)
+                );
+            }
+        }
+
+        result_count++;
+    }
+
+    json_object_put(root);
+
+    return result_count;
+}
+
+
+/*
+ * Search Wikipedia and populate the results array.
+ */
+int wikipedia_search(
+    const char *query,
+    WikipediaSearchResult results[],
+    int max_results)
+{
+    char encoded_query[1024];
+    char url[1536];
+    char command[2048];
+
+    if (query == NULL ||
+        query[0] == '\0' ||
+        results == NULL ||
+        max_results <= 0)
+    {
+        return -1;
+    }
+
+    wikipedia_url_encode(
+        query,
+        encoded_query,
+        sizeof(encoded_query)
+    );
+
+    snprintf(
+        url,
+        sizeof(url),
+        "https://en.wikipedia.org/w/api.php"
+        "?action=query"
+        "&list=search"
+        "&srsearch=%s"
+        "&srlimit=%d"
+        "&srprop=snippet"
+        "&format=json",
+        encoded_query,
+        max_results
+    );
+
+    snprintf(
+        command,
+        sizeof(command),
+        "curl -L -s '%s' -o '%s'",
+        url,
+        WIKIPEDIA_SEARCH_JSON_FILE
+    );
+
+    if (system(command) != 0)
+        return -1;
+
+    return json_extract_search_results(
+        WIKIPEDIA_SEARCH_JSON_FILE,
+        results,
+        max_results
+    );
+}
+
 
 static int wikipedia_fetch_more_links(
     const char *article,
@@ -692,64 +914,199 @@ static void wikipedia_browse_links(const char *article)
 }
 
 void wikipedia_lookup(void)
+
 {
     char article[256];
-    char encoded_article[256];
-    char url[768];
-    char command[1024];
+    char query[256];
+    char input[32];
+
+    WikipediaSearchResult results[
+        WIKIPEDIA_MAX_SEARCH_RESULTS
+    ];
+
     int choice;
+    int result_count;
+    int page;
+    int start;
+    int end;
+    int selection;
+    int article_selected = 0;
 
-    printf("\n");
-    printf("+---------------------------------------------+\n");
-    printf("|                  Wikipedia                  |\n");
-    printf("+---------------------------------------------+\n");
-    printf("\n");
-    printf("Enter article name (use underscores for spaces):\n");
-    printf("> ");
+    while (!article_selected)
+    {
+        printf("\n");
+        printf("+---------------------------------------------+\n");
+        printf("|                  Wikipedia                  |\n");
+        printf("+---------------------------------------------+\n");
+        printf("\n");
+        printf("1. Search Wikipedia\n");
+        printf("2. Enter article title\n");
+        printf("3. Back\n");
+        printf("\n");
+        printf("Enter your choice: ");
 
-    if (fgets(article, sizeof(article), stdin) == NULL) {
+        if (fgets(input, sizeof(input), stdin) == NULL)
+            return;
+
+        choice = atoi(input);
+
+        switch (choice)
+        {
+            case 1:
+            {
+                printf("\nEnter search terms:\n");
+                printf("> ");
+
+                if (fgets(query, sizeof(query), stdin) == NULL)
+                    return;
+
+                query[strcspn(query, "\n")] = '\0';
+
+                if (query[0] == '\0')
+                    break;
+
+                printf("\nSearching Wikipedia...\n");
+
+                result_count = wikipedia_search(
+                    query,
+                    results,
+                    WIKIPEDIA_MAX_SEARCH_RESULTS
+                );
+
+                if (result_count < 0)
+                {
+                    printf("\nWikipedia search failed.\n");
+                    break;
+                }
+
+                if (result_count == 0)
+                {
+                    printf("\nNo matching articles found.\n");
+                    break;
+                }
+
+                page = 0;
+
+                while (1)
+                {
+                    start = page * 10;
+                    end = start + 10;
+
+                    if (end > result_count)
+                        end = result_count;
+
+                    printf("\n");
+                    printf("+---------------------------------------------+\n");
+                    printf("|              Wikipedia Results              |\n");
+                    printf("+---------------------------------------------+\n");
+                    printf("\n");
+
+                    for (int i = start; i < end; i++)
+                    {
+                        printf("%2d. %s\n",
+                               i - start + 1,
+                               results[i].title);
+                    }
+
+                    printf("\n");
+                    printf("Results %d-%d of %d\n",
+                           start + 1,
+                           end,
+                           result_count);
+
+                    printf("\n");
+                    printf("N. Next page    P. Previous page\n");
+                    printf("B. Back to search menu\n");
+                    printf("\n");
+                    printf("Enter article number or command: ");
+
+                    if (fgets(input, sizeof(input), stdin) == NULL)
+                        return;
+
+                    input[strcspn(input, "\n")] = '\0';
+
+                    if (input[0] == '\0')
+                        continue;
+
+                    if (input[0] == 'b' || input[0] == 'B')
+                        break;
+
+                    if (input[0] == 'n' || input[0] == 'N')
+                    {
+                        if (end < result_count)
+                            page++;
+                        else
+                            printf("\nAlready on the last page.\n");
+
+                        continue;
+                    }
+
+                    if (input[0] == 'p' || input[0] == 'P')
+                    {
+                        if (page > 0)
+                            page--;
+                        else
+                            printf("\nAlready on the first page.\n");
+
+                        continue;
+                    }
+
+                    selection = atoi(input);
+
+                    if (selection >= 1 &&
+                        selection <= end - start)
+                    {
+                        snprintf(
+                            article,
+                            sizeof(article),
+                            "%s",
+                            results[start + selection - 1].title
+                        );
+
+                        article_selected = 1;
+                        break;
+                    }
+
+                    printf("\nInvalid selection.\n");
+                }
+
+                break;
+            }
+
+            case 2:
+            {
+                printf("\nEnter article title:\n");
+                printf("> ");
+
+                if (fgets(article, sizeof(article), stdin) == NULL)
+                    return;
+
+                article[strcspn(article, "\n")] = '\0';
+
+                if (article[0] != '\0')
+                    article_selected = 1;
+
+                break;
+            }
+
+            case 3:
+                return;
+
+            default:
+                printf("\nInvalid choice.\n");
+                break;
+        }
+    }
+
+    printf("\nFetching %s...\n", article);
+
+    if (wikipedia_fetch_article(article) != 0)
+    {
+        printf("\nUnable to retrieve article.\n");
         return;
     }
 
-    article[strcspn(article, "\n")] = '\0';
 
-    if (article[0] == '\0') {
-        printf("No article name entered.\n");
-        return;
-    }
-
-    /*
-     * For Version 1, the user supplies a Wikipedia page title.
-     * Underscores are already valid in Wikipedia URLs.
-     */
-    snprintf(encoded_article,
-             sizeof(encoded_article),
-             "%s",
-             article);
-
-    snprintf(url,
-             sizeof(url),
-             WIKIPEDIA_API_URL,
-             encoded_article);
-
-    snprintf(command,
-             sizeof(command),
-             "curl -L -s '%s' -o '%s'",
-             url,
-             WIKIPEDIA_JSON_FILE);
-
-    printf("\nFetching Wikipedia article...\n");
-
-    if (system(command) != 0) {
-        printf("Unable to retrieve Wikipedia article.\n");
-        return;
-    }
-
-    if (json_extract_text(WIKIPEDIA_JSON_FILE,
-                           WIKIPEDIA_TEXT_FILE) != 0) {
-        printf("Unable to extract article text.\n");
-        return;
-    }
 
     long article_size;
 size_t max_size;
@@ -877,8 +1234,8 @@ transfer.total_parts = parts;
                    transfer.current_part,
                    transfer.total_parts);
             printf("|                                             |\n");
-            printf("| 1. Send next part                          |\n");
-            printf("| 2. Cancel transfer                         |\n");
+            printf("| 1. Send next part                           |\n");
+            printf("| 2. Cancel transfer                          |\n");
             printf("+---------------------------------------------+\n");
             printf("\n");
             printf("Enter your choice: ");

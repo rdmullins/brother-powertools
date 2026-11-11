@@ -27,9 +27,10 @@ static void bbs_menu(void)
             "|                    BBSes                    |\n"
             "+---------------------------------------------+\n"
             "|  1. Private Heaven II BBS                   |\n"
-            "|  2. Level29 BBS                              |\n"
-            "|  3. Particles! BBS                           |\n"
-            "|  4. Back                                     |\n"
+            "|  2. Level29 BBS                             |\n"
+            "|  3. Particles! BBS                          |\n"
+            "|  4. CompuServe                              |\n"
+            "|  5. Quit                                    |\n"
             "+---------------------------------------------+\n"
             "\n"
             "Enter your choice: "
@@ -62,6 +63,10 @@ static void bbs_menu(void)
                 break;
 
             case 4:
+                system("telnet compuserve-sim.duckdns.org 2323");
+                break;
+
+            case 5:
                 return;
 
             default:

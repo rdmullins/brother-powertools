@@ -21,7 +21,8 @@ void game_menu(void)
             "|  4. Oregon Trail                            |\n"
             "|  5. Zork                                    |\n"
             "|  6. Quiz                                    |\n"
-            "|  7. Return to Main Menu                     |\n"
+            "|  7. Textle                                  |\n"
+            "|  8. Return to Main Menu                     |\n"
             "+---------------------------------------------+\n"
             "\n"
             "Enter your choice: "
@@ -64,6 +65,10 @@ void game_menu(void)
                 break;
 
             case 7:
+                system("cd /home/roger/textle && ./textle");
+                break;
+
+            case 8:
                 return;
 
             default:

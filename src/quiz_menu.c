@@ -3,6 +3,52 @@
 
 #include "quiz_menu.h"
 
+void jeopardy_menu(void)
+{
+    int choice;
+
+    while (1) {
+        printf(
+            "\n"
+            "+---------------------------------------------+\n"
+            "|              brother PowerTools             |\n"
+            "|                JEOPARDY! Prep               |\n"
+            "+---------------------------------------------+\n"
+            "|  1. Pavlovs                                 |\n"
+            "|  2. Return to Quiz Menu                     |\n"
+            "+---------------------------------------------+\n"
+            "\n"
+            "Enter your choice: "
+        );
+
+        if (scanf("%d", &choice) != 1) {
+            printf("Invalid input.\n");
+
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF) {
+                /* discard invalid input */
+            }
+
+            continue;
+        }
+
+        switch (choice) {
+            
+
+            case 1:
+                system("quiz -i $HOME/brother-powertools/data/quiz/index pavlov answer");
+                break;
+
+            case 2:
+                return;
+
+            default:
+                printf("Invalid option. Please try again.\n");
+                break;
+        }
+    }
+}
+
 void quiz_menu(void)
 {
     int choice;
@@ -14,6 +60,7 @@ void quiz_menu(void)
             "|              brother PowerTools             |\n"
             "|                     Quiz                    |\n"
             "+---------------------------------------------+\n"
+            "|  0. JEOPARDY! Preparation                   |\n"
             "|  1. State Capitals                          |\n"
             "|  2. U.S. Presidents                         |\n"
             "|  3. Star Trek                               |\n"
@@ -42,6 +89,10 @@ void quiz_menu(void)
         }
 
         switch (choice) {
+            case 0:
+                jeopardy_menu();
+                break;
+
             case 1:
                 system("quiz state capital");
                 break;

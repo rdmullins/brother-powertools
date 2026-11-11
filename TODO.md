@@ -27,3 +27,5 @@
 - [x] Expose Linux connection for wifi modem use
 - [x] Add read-on-screen (and search) to Gutenberg books
 - [ ] Email Infokat record
+- [ ] Refactor Wikipedia module to allow search
+- [ ] Build additional Jeopardy! quiz modules
