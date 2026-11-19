@@ -22,7 +22,8 @@ void game_menu(void)
             "|  5. Zork                                    |\n"
             "|  6. Quiz                                    |\n"
             "|  7. Textle                                  |\n"
-            "|  8. Return to Main Menu                     |\n"
+            "|  8. Dopewars                                |\n"
+            "|  9. Return to Main Menu                     |\n"
             "+---------------------------------------------+\n"
             "\n"
             "Enter your choice: "
@@ -69,6 +70,10 @@ void game_menu(void)
                 break;
 
             case 8:
+                system("cd /home/roger/src/dopewars && ./src/dopewars -T -f /tmp/dopewars.sco");
+                break;
+
+            case 9:
                 return;
 
             default:

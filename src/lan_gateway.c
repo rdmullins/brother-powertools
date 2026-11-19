@@ -2398,6 +2398,15 @@ static void send_wikipedia_article(
             return;
         }
 
+
+        printf(
+            "\nDEBUG: command='%s', page=%d, start=%d, end=%d\n",
+            input_command,
+            page,
+            page * NPR_LAN_LINES_PER_PAGE,
+            (page + 1) * NPR_LAN_LINES_PER_PAGE
+        );
+
         if (input_command[0] == '\0')
             return;
 
