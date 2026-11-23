@@ -46,7 +46,16 @@ void game_menu(void)
                 break;
 
             case 2:
-                system("$HOME/.local/bin/trek");
+                printf ("  __________________          __\n");
+                printf ("  \\_____NCC-1701___|)____.---'--'---.____\n");
+                printf ("               ||    \\----.________.----/\n");
+                printf ("               ||     / /    '--'\n");
+                printf ("               ||    / /\n");
+                printf ("             __||___/ /_\n");
+                printf ("            |___         \\\(>\n");
+                printf ("                '--------'\n");
+
+                system("$HOME/.local/bin/trek"); 
                 break;
 
             case 3:
