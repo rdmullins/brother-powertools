@@ -3,6 +3,7 @@
 
 #include "games.h"
 #include "quiz_menu.h"
+#include "game_2048.h"
 
 void game_menu(void)
 {
@@ -23,7 +24,8 @@ void game_menu(void)
             "|  6. Quiz                                    |\n"
             "|  7. Textle                                  |\n"
             "|  8. Dopewars                                |\n"
-            "|  9. Return to Main Menu                     |\n"
+            "|  9. 2048                                    |\n"
+            "|  10. Return to Main Menu                     |\n"
             "+---------------------------------------------+\n"
             "\n"
             "Enter your choice: "
@@ -83,6 +85,10 @@ void game_menu(void)
                 break;
 
             case 9:
+                game_2048();
+                break;
+
+            case 10:
                 return;
 
             default:
